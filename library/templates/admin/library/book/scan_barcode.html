@@ -1,0 +1,63 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+  <h1>Scan Book Barcode</h1>
+  <form method="post">
+    {% csrf_token %}
+    <p>
+      <label for="barcode">Barcode (ISBN):</label>
+      <input type="text" name="barcode" id="barcode" readonly>
+    </p>
+    <div id="scanner-container" style="width: 100%; max-width: 600px; margin-bottom: 20px;">
+      <video id="scanner-video" autoplay style="width: 100%;"></video>
+    </div>
+    <button type="button" id="start-scanner">Start Scanner</button>
+    <button type="button" id="stop-scanner" disabled>Stop Scanner</button>
+    <p>
+      <input type="submit" value="Import">
+      <a href="{% url 'admin:library_book_changelist' %}">Cancel</a>
+    </p>
+  </form>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+  <script>
+    document.getElementById('start-scanner').addEventListener('click', function() {
+      Quagga.init({
+        inputStream: {
+          name: "Live",
+          type: "LiveStream",
+          target: document.querySelector('#scanner-video'),
+          constraints: {
+            facingMode: "environment"  // Use rear camera if available
+          }
+        },
+        decoder: {
+          readers: ["ean_13_reader"]  // ISBN-13 barcodes are EAN-13
+        }
+      }, function(err) {
+        if (err) {
+          console.error(err);
+          alert("Error initializing scanner: " + err);
+          return;
+        }
+        Quagga.start();
+        document.getElementById('start-scanner').disabled = true;
+        document.getElementById('stop-scanner').disabled = false;
+      });
+
+      Quagga.onDetected(function(result) {
+        var code = result.codeResult.code;
+        document.getElementById('barcode').value = code;
+        Quagga.stop();
+        document.getElementById('start-scanner').disabled = false;
+        document.getElementById('stop-scanner').disabled = true;
+      });
+    });
+
+    document.getElementById('stop-scanner').addEventListener('click', function() {
+      Quagga.stop();
+      document.getElementById('start-scanner').disabled = false;
+      document.getElementById('stop-scanner').disabled = true;
+    });
+  </script>
+{% endblock %}

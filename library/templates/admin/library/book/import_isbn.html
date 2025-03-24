@@ -1,0 +1,14 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+  <h1>Import Book by ISBN</h1>
+  <form method="post">
+    {% csrf_token %}
+    <p>
+      <label for="isbn">ISBN:</label>
+      <input type="text" name="isbn" id="isbn" required>
+    </p>
+    <input type="submit" value="Import">
+    <a href="{% url 'admin:library_book_changelist' %}">Cancel</a>
+  </form>
+{% endblock %}

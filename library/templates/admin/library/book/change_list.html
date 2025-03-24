@@ -1,0 +1,11 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+  {{ block.super }}
+  <li>
+    <a href="{% url 'admin:book_import_isbn' %}" class="addlink">Import by ISBN</a>
+  </li>
+  <li>
+    <a href="{% url 'admin:book_scan_barcode' %}" class="addlink">Scan Barcode</a>
+  </li>
+{% endblock %}
