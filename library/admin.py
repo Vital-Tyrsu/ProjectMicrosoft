@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.shortcuts import render, redirect
 from django.urls import path, reverse
 from django.utils import timezone
+from datetime import timedelta
 import requests
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
@@ -133,11 +134,30 @@ class ReservationAdmin(admin.ModelAdmin):
         self.message_user(request, "Selected reservations marked as expired")
 
     def mark_picked_up(self, request, queryset):
+        updated_count = 0
         for reservation in queryset:
             if reservation.status == 'assigned':
                 reservation.status = 'picked_up'
-                reservation.save()  # This will trigger the signal to create a Borrowing
-        self.message_user(request, "Selected reservations marked as picked up")
+                reservation.save()
+                updated_count += 1
+                # Check the latest ReservationLog for this reservation
+                latest_log = ReservationLog.objects.filter(reservation=reservation).order_by('-action_date').first()
+                if latest_log and latest_log.action == 'borrowing_failed':
+                    self.message_user(
+                        request,
+                        f"Failed to create Borrowing for reservation {reservation.id}: {latest_log.details}",
+                        level=messages.WARNING
+                    )
+                elif latest_log and latest_log.action == 'borrowing_skipped':
+                    self.message_user(
+                        request,
+                        f"Borrowing already exists for reservation {reservation.id}: {latest_log.details}",
+                        level=messages.WARNING
+                    )
+        if updated_count > 0:
+            self.message_user(request, f"{updated_count} reservations marked as picked up")
+        else:
+            self.message_user(request, "No reservations were updated (must be in 'assigned' status)", level=messages.WARNING)
 
     def mark_canceled(self, request, queryset):
         queryset.update(status='canceled', copy=None)
@@ -148,21 +168,60 @@ class ReservationAdmin(admin.ModelAdmin):
     mark_canceled.short_description = "Mark as canceled"
 
 class BorrowingAdmin(admin.ModelAdmin):
-    list_display = ('user', 'copy', 'borrow_date', 'return_date')
+    list_display = ('id', 'user', 'copy', 'borrow_date', 'return_date', 'renewal_count')
+    list_filter = ('return_date',)
     actions = ['mark_returned', 'renew_borrowing']
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request).select_related('user', 'copy')
+        print(f"BorrowingAdmin queryset: {qs}")
+        return qs
+
     def mark_returned(self, request, queryset):
-        queryset.update(return_date=timezone.now())
-        self.message_user(request, "Selected borrowings marked as returned")
+        updated_count = queryset.filter(return_date__isnull=True).update(return_date=timezone.now())
+        if updated_count > 0:
+            self.message_user(request, f"Marked {updated_count} borrowings as returned")
+        else:
+            self.message_user(request, "No active borrowings were updated", level=messages.WARNING)
 
     def renew_borrowing(self, request, queryset):
+        renewed_count = 0
         for borrowing in queryset:
+            # Check if the borrowing is still active (not returned)
+            if borrowing.return_date and borrowing.return_date < timezone.now():
+                self.message_user(
+                    request,
+                    f"Cannot renew borrowing for {borrowing.user.username}: Book was due on {borrowing.return_date}",
+                    level=messages.WARNING
+                )
+                continue
+            if borrowing.return_date is None:
+                self.message_user(
+                    request,
+                    f"Cannot renew borrowing for {borrowing.user.username}: Return date not set",
+                    level=messages.WARNING
+                )
+                continue
+            # Check renewal limit
             if borrowing.renewal_count < 2:
                 borrowing.renewal_count += 1
+                # Extend the return_date by 14 days from the current return_date
+                borrowing.return_date = borrowing.return_date + timedelta(days=14)
                 borrowing.save()
-                self.message_user(request, f"Renewed borrowing for {borrowing.user.username}")
+                self.message_user(
+                    request,
+                    f"Renewed borrowing for {borrowing.user.username}. New return date: {borrowing.return_date}",
+                    level=messages.SUCCESS
+                )
+                renewed_count += 1
             else:
-                self.message_user(request, f"Cannot renew {borrowing.user.username}'s borrowing: max renewals reached", level=messages.WARNING)
+                self.message_user(
+                    request,
+                    f"Cannot renew borrowing for {borrowing.user.username}: Max renewals (2) reached",
+                    level=messages.WARNING
+                )
+        if renewed_count == 0 and not queryset.exists():
+            self.message_user(request, "No borrowings were renewed", level=messages.WARNING)
 
     mark_returned.short_description = "Mark as returned"
     renew_borrowing.short_description = "Renew borrowing"

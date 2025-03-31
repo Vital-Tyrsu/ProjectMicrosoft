@@ -3,14 +3,8 @@ from django.db import models
 from django.core.validators import RegexValidator
 from django.utils import timezone
 from datetime import timedelta
-import uuid
 
 class User(AbstractUser):
-    #id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    # avoid circular import issue "appname.ModelName"`
-    # use serializers for all models when making requests/receiving`
-    # add minlengthvalidator for isbn https://www.programcreek.com/python/example/91510/django.core.validators.MinLengthValidator
-
     ROLE_CHOICES = (
         ('student', 'Student'),
         ('teacher', 'Teacher'),
@@ -29,10 +23,7 @@ class Book(models.Model):
     author = models.CharField(max_length=255, null=True, blank=True, unique=True)
     publication_year = models.IntegerField(null=True, blank=True)
     genre = models.CharField(max_length=50, null=True, blank=True)
-    isbn = models.CharField(max_length=13, null=True, blank=True, unique=True)  # Add ISBN field
-    # created_at
-    # updated_at
-
+    isbn = models.CharField(max_length=13, null=True, blank=True, unique=True)
 
     class Meta:
         db_table = 'books'
@@ -89,6 +80,8 @@ class Reservation(models.Model):
                 self.status = 'assigned'
                 self.expiration_date = timezone.now() + timedelta(days=3)
                 self.save()
+            else:
+                print(f"No available copy for book {self.book.title} for reservation {self.id}")
 
 class Borrowing(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
