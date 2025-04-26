@@ -11,6 +11,7 @@ class User(AbstractUser):
         ('admin', 'Admin'),
     )
     role = models.CharField(max_length=7, choices=ROLE_CHOICES, default='student')
+    azure_id = models.CharField(max_length=255, null=True, blank=True, unique=True)
 
     class Meta:
         db_table = 'users'

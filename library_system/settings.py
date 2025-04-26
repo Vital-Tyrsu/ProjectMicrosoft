@@ -17,6 +17,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'import_export',
+    'django_auth_adfs',
     'library.apps.LibraryConfig',
 ]
 
@@ -26,9 +27,37 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django_auth_adfs.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+AUTHENTICATION_BACKENDS = (
+    'django_auth_adfs.backend.AdfsAuthCodeBackend',
+    'django.contrib.auth.backends.ModelBackend',
+)
+
+AUTH_ADFS = {
+    'SERVER': 'https://login.microsoftonline.com/<your-tenant-id>/v2.0',
+    'CLIENT_ID': '<your-client-id>',
+    'CLIENT_SECRET': '<your-client-secret>',
+    'AUDIENCE': 'api://<your-client-id>',
+    'CLAIM_MAPPING': {
+        'first_name': 'given_name',
+        'last_name': 'family_name',
+        'email': 'email',
+        'username': 'preferred_username',
+        'azure_id': 'sub',
+    },
+    'USERNAME_CLAIM': 'preferred_username',  # this is the UPN from Azure, can be changed to email if preferred
+    'MIRROR_GROUPS': True,
+    # Mapping of Entra ID groups to Django rules, might need an adjutment in the future
+    'GROUP_TO_ROLE_MAPPING': {
+        'Students': 'student',
+        'Teachers': 'teacher',
+        'Administrators': 'admin',
+    },
+}
 
 ROOT_URLCONF = 'library_system.urls'
 
@@ -82,3 +111,6 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'library.User'
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = '/'
