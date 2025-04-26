@@ -7,7 +7,7 @@ SECRET_KEY = 'django-insecure-+u-h%_48mb5+quh+b#3crq^klglzmu77b!aqo&mflgd(wm(&bw
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['Django-gxje7n23rzv5y.azurewebsites.net']
+ALLOWED_HOSTS = ['Django-gxje7n23rzv5y.azurewebsites.net', 'localhost', '127.0.0.1']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
