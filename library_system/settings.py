@@ -33,15 +33,16 @@ MIDDLEWARE = [
 ]
 
 AUTHENTICATION_BACKENDS = (
-    'django_auth_adfs.backend.AdfsAuthCodeBackend',
+    # 'django_auth_adfs.backend.AdfsAuthCodeBackend',
+    'library.backends.CustomAdfsBackend',
     'django.contrib.auth.backends.ModelBackend',
 )
 
 AUTH_ADFS = {
-    'SERVER': 'https://login.microsoftonline.com/<your-tenant-id>/v2.0',
-    'CLIENT_ID': '<your-client-id>',
-    'CLIENT_SECRET': '<your-client-secret>',
-    'AUDIENCE': 'api://<your-client-id>',
+    'SERVER': 'https://login.microsoftonline.com/<tenant-id>/v2.0',
+    'CLIENT_ID': '<client-id>',
+    'CLIENT_SECRET': '<client-secret>',
+    'AUDIENCE': 'api://<client-id>',
     'CLAIM_MAPPING': {
         'first_name': 'given_name',
         'last_name': 'family_name',
@@ -51,12 +52,7 @@ AUTH_ADFS = {
     },
     'USERNAME_CLAIM': 'preferred_username',  # this is the UPN from Azure, can be changed to email if preferred
     'MIRROR_GROUPS': True,
-    # Mapping of Entra ID groups to Django rules, might need an adjutment in the future
-    'GROUP_TO_ROLE_MAPPING': {
-        'Students': 'student',
-        'Teachers': 'teacher',
-        'Administrators': 'admin',
-    },
+    'RELYING_PARTY_ID': '<relying-party-id>',
 }
 
 ROOT_URLCONF = 'library_system.urls'
@@ -113,4 +109,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'library.User'
 
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = 'home'

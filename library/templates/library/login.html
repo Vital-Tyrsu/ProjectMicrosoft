@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="login-container">
+    <h2>Library System Login</h2>
+    <div class="login-options">
+        <a href="{% url 'django_auth_adfs:login' %}" class="microsoft-login-button">
+            Login with Microsoft
+        </a>
+    </div>
+</div>
+{% endblock %}
