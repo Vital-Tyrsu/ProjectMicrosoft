@@ -1,0 +1,504 @@
+{% extends 'library/base.html' %}
+
+{% block title %}CSV Import - Library System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .import-container {
+        max-width: 900px;
+        margin: 2rem auto;
+        padding: 0 1.5rem;
+    }
+
+    .import-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+        margin-bottom: 2rem;
+    }
+
+    .import-card h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Drag and Drop Zone */
+    .drop-zone {
+        border: 3px dashed #d1d5db;
+        border-radius: 12px;
+        padding: 3rem 2rem;
+        text-align: center;
+        transition: all 0.3s;
+        cursor: pointer;
+        background: #f9fafb;
+    }
+
+    .drop-zone.drag-over {
+        border-color: #667eea;
+        background: #f0f4ff;
+    }
+
+    .drop-zone-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+
+    .drop-zone-text {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+
+    .drop-zone-hint {
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+
+    .file-input-hidden {
+        display: none;
+    }
+
+    /* Selected File Display */
+    .selected-file {
+        display: none;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: #f3f4f6;
+        border-radius: 8px;
+        margin-top: 1rem;
+    }
+
+    .selected-file.show {
+        display: flex;
+    }
+
+    .file-icon {
+        font-size: 2rem;
+    }
+
+    .file-info {
+        flex: 1;
+    }
+
+    .file-name {
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.25rem;
+    }
+
+    .file-size {
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+
+    .remove-file {
+        color: #dc2626;
+        cursor: pointer;
+        font-size: 1.5rem;
+        transition: all 0.2s;
+    }
+
+    .remove-file:hover {
+        color: #991b1b;
+    }
+
+    /* Preview Table */
+    .preview-section {
+        display: none;
+        margin-top: 2rem;
+    }
+
+    .preview-section.show {
+        display: block;
+    }
+
+    .preview-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+        font-size: 0.875rem;
+    }
+
+    .preview-table th {
+        background: #f3f4f6;
+        padding: 0.75rem;
+        text-align: left;
+        font-weight: 600;
+        color: #1f2937;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    .preview-table td {
+        padding: 0.75rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .preview-table tr:hover {
+        background: #f9fafb;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .btn-import {
+        flex: 1;
+        padding: 0.875rem 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-import:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-import:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .btn-cancel {
+        padding: 0.875rem 2rem;
+        background: white;
+        color: #6b7280;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .btn-cancel:hover {
+        border-color: #667eea;
+        color: #667eea;
+    }
+
+    /* Sample CSV Info */
+    .sample-csv {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .sample-csv h3 {
+        color: #166534;
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .sample-csv pre {
+        background: white;
+        padding: 1rem;
+        border-radius: 6px;
+        overflow-x: auto;
+        font-size: 0.813rem;
+        color: #1f2937;
+    }
+
+    .download-sample {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: #166534;
+        color: white;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-top: 1rem;
+        transition: all 0.2s;
+    }
+
+    .download-sample:hover {
+        background: #14532d;
+        color: white;
+    }
+
+    /* Loading Spinner */
+    .spinner {
+        display: none;
+        border: 3px solid #f3f4f6;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 2rem auto;
+    }
+
+    .spinner.show {
+        display: block;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .import-container {
+            padding: 0 1rem;
+        }
+
+        .import-card {
+            padding: 1.5rem;
+        }
+
+        .drop-zone {
+            padding: 2rem 1rem;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .preview-table {
+            font-size: 0.75rem;
+        }
+
+        .preview-table th,
+        .preview-table td {
+            padding: 0.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="import-container">
+    <!-- Back Button -->
+    <a href="{% url 'admin_data_management' %}" class="back-link" style="display: inline-flex; align-items: center; gap: 0.5rem; color: #3b82f6; text-decoration: none; font-weight: 500; margin-bottom: 1.5rem; transition: all 0.2s;">
+        <span>←</span>
+        <span>Back to Data Management</span>
+    </a>
+
+    <!-- Sample CSV Info -->
+    <div class="sample-csv">
+        <h3>📋 CSV Format Requirements</h3>
+        <p style="color: #166534; margin-bottom: 1rem;">Your CSV file should have the following columns:</p>
+        <pre>title,author,isbn,genre,publication_year,description
+"The Great Gatsby","F. Scott Fitzgerald","9780743273565","Fiction","1925","Classic novel"
+"1984","George Orwell","9780451524935","Fiction","1949","Dystopian classic"</pre>
+        <p style="color: #166534; font-size: 0.875rem; margin-top: 1rem;">
+            <strong>Required:</strong> title, author<br>
+            <strong>Optional:</strong> isbn, genre, publication_year, description
+        </p>
+        <a href="{% url 'admin_download_sample_csv' %}" class="download-sample">
+            📥 Download Sample CSV
+        </a>
+    </div>
+
+    <!-- Upload Card -->
+    <div class="import-card">
+        <h2>📄 Upload CSV File</h2>
+        
+        <form id="csv-upload-form" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <!-- Drop Zone -->
+            <div class="drop-zone" id="drop-zone">
+                <div class="drop-zone-icon">📁</div>
+                <div class="drop-zone-text">Drag and drop your CSV file here</div>
+                <div class="drop-zone-hint">or click to browse (Maximum file size: 5MB)</div>
+            </div>
+            
+            <input type="file" id="csv-file-input" name="csv_file" accept=".csv" class="file-input-hidden">
+            
+            <!-- Selected File Display -->
+            <div class="selected-file" id="selected-file">
+                <div class="file-icon">📄</div>
+                <div class="file-info">
+                    <div class="file-name" id="file-name"></div>
+                    <div class="file-size" id="file-size"></div>
+                </div>
+                <span class="remove-file" id="remove-file">×</span>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div class="spinner" id="spinner"></div>
+
+            <!-- Preview Section -->
+            <div class="preview-section" id="preview-section">
+                <h3 style="font-size: 1.125rem; font-weight: 600; color: #1f2937; margin-bottom: 1rem;">
+                    Preview (First 5 rows)
+                </h3>
+                <div style="overflow-x: auto;">
+                    <table class="preview-table" id="preview-table">
+                        <!-- Will be filled by JavaScript -->
+                    </table>
+                </div>
+                <div style="margin-top: 1rem; padding: 1rem; background: #f0fdf4; border-radius: 6px; border: 1px solid #bbf7d0;">
+                    <span style="color: #166534; font-weight: 600;" id="total-rows"></span>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons" style="display: none;" id="action-buttons">
+                <button type="submit" class="btn-import" id="import-btn">
+                    ✓ Import Books
+                </button>
+                <a href="{% url 'admin_data_management' %}" class="btn-cancel">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('csv-file-input');
+    const selectedFile = document.getElementById('selected-file');
+    const fileName = document.getElementById('file-name');
+    const fileSize = document.getElementById('file-size');
+    const removeFile = document.getElementById('remove-file');
+    const previewSection = document.getElementById('preview-section');
+    const previewTable = document.getElementById('preview-table');
+    const actionButtons = document.getElementById('action-buttons');
+    const spinner = document.getElementById('spinner');
+    const totalRows = document.getElementById('total-rows');
+    const form = document.getElementById('csv-upload-form');
+
+    // Click to browse
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    // Drag and drop handlers
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('drag-over');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            handleFileSelect(files[0]);
+        }
+    });
+
+    // File input change
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFileSelect(e.target.files[0]);
+        }
+    });
+
+    // Remove file
+    removeFile.addEventListener('click', () => {
+        fileInput.value = '';
+        selectedFile.classList.remove('show');
+        previewSection.classList.remove('show');
+        actionButtons.style.display = 'none';
+        dropZone.style.display = 'block';
+    });
+
+    function handleFileSelect(file) {
+        // Validate file type
+        if (!file.name.endsWith('.csv')) {
+            alert('Please select a CSV file');
+            return;
+        }
+
+        // Validate file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('File size must be less than 5MB');
+            return;
+        }
+
+        // Display file info
+        fileName.textContent = file.name;
+        fileSize.textContent = `${(file.size / 1024).toFixed(2)} KB`;
+        selectedFile.classList.add('show');
+        dropZone.style.display = 'none';
+
+        // Parse and preview CSV
+        parseCSV(file);
+    }
+
+    function parseCSV(file) {
+        spinner.classList.add('show');
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target.result;
+            const lines = text.split('\n').filter(line => line.trim());
+            
+            if (lines.length < 2) {
+                alert('CSV file must contain at least a header row and one data row');
+                spinner.classList.remove('show');
+                return;
+            }
+
+            // Parse CSV
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            const rows = lines.slice(1, 6).map(line => {
+                return line.split(',').map(cell => cell.trim().replace(/"/g, ''));
+            });
+
+            // Display preview
+            displayPreview(headers, rows, lines.length - 1);
+            
+            spinner.classList.remove('show');
+            previewSection.classList.add('show');
+            actionButtons.style.display = 'flex';
+        };
+        reader.readAsText(file);
+    }
+
+    function displayPreview(headers, rows, total) {
+        // Build table
+        let html = '<thead><tr>';
+        headers.forEach(header => {
+            html += `<th>${header}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+        
+        rows.forEach(row => {
+            html += '<tr>';
+            row.forEach(cell => {
+                html += `<td>${cell}</td>`;
+            });
+            html += '</tr>';
+        });
+        html += '</tbody>';
+        
+        previewTable.innerHTML = html;
+        totalRows.textContent = `Total rows to import: ${total}`;
+    }
+
+    // Form submission
+    form.addEventListener('submit', (e) => {
+        const importBtn = document.getElementById('import-btn');
+        importBtn.disabled = true;
+        importBtn.textContent = 'Importing...';
+    });
+</script>
+{% endblock %}

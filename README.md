@@ -12,16 +12,15 @@ We are building this system with **full control over the development process**, 
 ✅ **Book Catalog** – A searchable catalog to browse and filter books based on author, title, genre, and availability.  
 ✅ **Borrow & Return System** – Track borrowed books, due dates, and returns efficiently.  
 ✅ **Admin Dashboard** – Manage books, track loans, and oversee student activity.  
-✅ **Azure Cloud Integration** – Secure storage of data using **Azure SQL Database** and authentication with **Azure Active Directory**.  
 ✅ **Scalability & Security** – Designed to scale for larger schools and ensure student data security.  
 
 ### 🛠️ Tech Stack  
 
 - **Frontend:** React (decided based on performance and UI requirements).  
-- **Backend:** Node.js with Express or Python with Flask/Django (final decision pending).  
-- **Database:** Azure SQL Database for structured data storage.  
-- **Authentication:** Azure Active Directory for secure login and access control.  
-- **Deployment:** Hosted on **Microsoft Azure**, leveraging cloud infrastructure for reliability and performance.  
+- **Backend:** Django (Python web framework).  
+- **Database:** SQLite for local development and structured data storage.  
+- **Authentication:** Django's built-in authentication system for secure login and access control.  
+- **Deployment:** Local hosting with option to deploy to any hosting provider.  
 
 ### 📌 Why Are We Building This?  
 
@@ -37,8 +36,8 @@ Many school libraries still rely on manual or outdated systems for managing book
 1️⃣ **Project Planning & Database Design** – Structuring the database and planning the system architecture.  
 2️⃣ **Frontend Development** – Building UI components for the book catalog, borrowing system, and admin dashboard.  
 3️⃣ **Backend API Implementation** – Creating a RESTful API to handle book management, user authentication, and borrowing logic.  
-4️⃣ **Azure Integration** – Setting up cloud database, authentication, and hosting.  
-5️⃣ **Testing & Deployment** – Conducting thorough testing before deploying the system on Azure.  
+4️⃣ **Local Development** – Setting up local database and authentication.  
+5️⃣ **Testing & Deployment** – Conducting thorough testing before deploying the system.  
 
 ### 💡 How to Contribute  
 

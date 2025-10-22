@@ -1,0 +1,307 @@
+{% extends "library/base.html" %}
+
+{% block title %}Server Error - Library System{% endblock %}
+
+{% block content %}
+<style>
+    .error-container {
+        max-width: 700px;
+        margin: 0 auto;
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .error-code {
+        font-size: 120px;
+        font-weight: 800;
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1;
+        margin-bottom: 20px;
+        animation: fadeInDown 0.6s ease;
+    }
+
+    @keyframes fadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .error-icon {
+        font-size: 80px;
+        margin-bottom: 20px;
+        animation: shake 0.5s ease;
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-10px); }
+        75% { transform: translateX(10px); }
+    }
+
+    .error-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 16px;
+        animation: fadeIn 0.8s ease 0.2s both;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .error-message {
+        font-size: 18px;
+        color: var(--gray-600);
+        margin-bottom: 40px;
+        line-height: 1.6;
+        animation: fadeIn 0.8s ease 0.4s both;
+    }
+
+    .error-actions {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-bottom: 50px;
+        animation: fadeIn 0.8s ease 0.6s both;
+    }
+
+    .error-btn {
+        padding: 14px 32px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 16px;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .error-btn-primary {
+        background: var(--primary);
+        color: white;
+    }
+
+    .error-btn-primary:hover {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .error-btn-secondary {
+        background: var(--gray-100);
+        color: var(--gray-700);
+    }
+
+    .error-btn-secondary:hover {
+        background: var(--gray-200);
+        transform: translateY(-2px);
+    }
+
+    .error-info {
+        background: #fef2f2;
+        border-left: 4px solid #ef4444;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 40px;
+        text-align: left;
+        animation: fadeIn 0.8s ease 0.8s both;
+    }
+
+    .error-info h3 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .error-info p {
+        font-size: 15px;
+        color: var(--gray-700);
+        line-height: 1.6;
+        margin-bottom: 8px;
+    }
+
+    .error-info ul {
+        list-style: none;
+        padding-left: 20px;
+    }
+
+    .error-info li {
+        font-size: 14px;
+        color: var(--gray-600);
+        margin-bottom: 6px;
+        position: relative;
+    }
+
+    .error-info li::before {
+        content: "→";
+        position: absolute;
+        left: -20px;
+        color: #ef4444;
+    }
+
+    .error-support {
+        background: white;
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: var(--shadow-md);
+        animation: fadeIn 0.8s ease 1s both;
+    }
+
+    .error-support h3 {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .error-support p {
+        font-size: 15px;
+        color: var(--gray-600);
+        line-height: 1.6;
+    }
+
+    .support-contact {
+        margin-top: 20px;
+        padding: 16px;
+        background: var(--gray-50);
+        border-radius: 8px;
+    }
+
+    .support-contact strong {
+        color: var(--primary);
+    }
+
+    @media (max-width: 768px) {
+        .error-code {
+            font-size: 80px;
+        }
+
+        .error-icon {
+            font-size: 60px;
+        }
+
+        .error-title {
+            font-size: 24px;
+        }
+
+        .error-message {
+            font-size: 16px;
+        }
+
+        .error-actions {
+            flex-direction: column;
+        }
+
+        .error-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .error-info,
+        .error-support {
+            padding: 20px;
+        }
+    }
+</style>
+
+<div class="error-container">
+    <div class="error-icon">⚠️</div>
+    <div class="error-code">500</div>
+    <h1 class="error-title">Something Went Wrong</h1>
+    <p class="error-message">
+        We're sorry, but something unexpected happened on our end.<br>
+        Our team has been notified and is working to fix it.
+    </p>
+
+    <div class="error-info">
+        <h3>
+            <span>ℹ️</span>
+            What happened?
+        </h3>
+        <p>A server error occurred while processing your request. This could be due to:</p>
+        <ul>
+            <li>Temporary server maintenance</li>
+            <li>Database connection issue</li>
+            <li>Unexpected system error</li>
+            <li>High server load</li>
+        </ul>
+    </div>
+
+    <div class="error-actions">
+        <a href="{% url 'book_catalog' %}" class="error-btn error-btn-primary">
+            <span>🏠</span> Go to Home
+        </a>
+        <a href="javascript:location.reload()" class="error-btn error-btn-secondary">
+            <span>🔄</span> Try Again
+        </a>
+    </div>
+
+    <div class="error-support">
+        <h3>
+            <span>💬</span>
+            Need Help?
+        </h3>
+        <p>
+            If this problem persists, please contact the library administrator or IT support.
+            Include what you were trying to do when this error occurred.
+        </p>
+        <div class="support-contact">
+            <strong>📧 Support:</strong> library@school.edu<br>
+            <strong>📞 Phone:</strong> (555) 123-4567<br>
+            <strong>🕐 Hours:</strong> Mon-Fri, 9:00 AM - 5:00 PM
+        </div>
+    </div>
+
+    {% if user.is_authenticated %}
+    <div style="margin-top: 40px; animation: fadeIn 0.8s ease 1.2s both;">
+        <a href="{% url 'my_reservations' %}" style="color: var(--primary); text-decoration: none; font-weight: 500;">
+            ← Back to My Reservations
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // Auto-retry after 5 seconds (optional - can be removed if unwanted)
+    let countdown = 30;
+    const retryBtn = document.querySelector('.error-btn-secondary');
+    
+    if (retryBtn) {
+        const originalText = retryBtn.innerHTML;
+        
+        const countdownInterval = setInterval(() => {
+            countdown--;
+            if (countdown > 0) {
+                retryBtn.innerHTML = `<span>🔄</span> Try Again (${countdown}s)`;
+            } else {
+                retryBtn.innerHTML = originalText;
+                clearInterval(countdownInterval);
+            }
+        }, 1000);
+
+        // Clear countdown if user clicks manually
+        retryBtn.addEventListener('click', () => {
+            clearInterval(countdownInterval);
+        });
+    }
+</script>
+{% endblock %}

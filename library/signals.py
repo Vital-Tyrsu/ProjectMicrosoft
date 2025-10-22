@@ -3,6 +3,39 @@ from django.dispatch import receiver  # Add this import
 from django.utils import timezone
 from datetime import timedelta
 from .models import Reservation, ReservationLog, Borrowing
+from django.conf import settings
+
+# allauth pre-social-login hook
+try:
+    from allauth.socialaccount.signals import pre_social_login
+    from allauth.core.exceptions import ImmediateHttpResponse  # Updated import path
+    from django.http import HttpResponseRedirect
+
+    @receiver(pre_social_login)
+    def restrict_social_signup(sender, sociallogin, request, **kwargs):
+        """Restrict social signups to allowed domains if configured.
+
+        Set environment variable ALLOWED_SIGNUP_DOMAINS to a comma-separated list
+        (for example: 'school.edu,school.org') to enable domain restriction.
+        """
+        allowed = getattr(settings, 'ALLOWED_SIGNUP_DOMAINS', '')
+        if not allowed:
+            return  # no restriction configured
+
+        allowed_domains = [d.strip().lower() for d in allowed.split(',') if d.strip()]
+        email = ''
+        if sociallogin and sociallogin.account and sociallogin.account.extra_data:
+            email = sociallogin.account.extra_data.get('email', '')
+        if not email and hasattr(sociallogin.user, 'email'):
+            email = sociallogin.user.email or ''
+
+        domain = email.split('@')[-1].lower() if '@' in email else ''
+        if domain and domain not in allowed_domains:
+            # Redirect back to login with an error message
+            raise ImmediateHttpResponse(HttpResponseRedirect('/login/?error=domain'))
+except Exception:
+    # allauth not installed or import failed - skip domain restriction
+    pass
 
 
 @receiver(post_save, sender=Reservation)
@@ -23,42 +56,5 @@ def handle_reservation_save(sender, instance, created, **kwargs):
             action='updated',
             details=f"Status changed to {instance.status}"
         )
-        if instance.status == 'picked_up' and instance.copy:
-            print(f"Reservation {instance.id} is picked up, checking for existing Borrowing")
-            # Check if a Borrowing already exists for this reservation
-            existing_borrowing = Borrowing.objects.filter(
-                user=instance.user,
-                copy=instance.copy,
-                return_date__isnull=True
-            ).first()
-            if not existing_borrowing:
-                try:
-                    borrowing = Borrowing.objects.create(
-                        user=instance.user,
-                        copy=instance.copy,
-                        borrow_date=timezone.now(),
-                        return_date=timezone.now() + timedelta(days=14),
-                        renewal_count=0  # Explicitly set to 0
-                    )
-                    print(f"Borrowing created: {borrowing.id} for user {instance.user} and copy {instance.copy}")
-                    ReservationLog.objects.create(
-                        reservation=instance,
-                        action='borrowing_created',
-                        details=f"Borrowing {borrowing.id} created for user {instance.user.username} and copy {instance.copy}"
-                    )
-                except Exception as e:
-                    print(f"Error creating Borrowing for reservation {instance.id}: {str(e)}")
-                    ReservationLog.objects.create(
-                        reservation=instance,
-                        action='borrowing_failed',
-                        details=f"Failed to create Borrowing: {str(e)}"
-                    )
-            else:
-                print(f"Existing Borrowing found: {existing_borrowing.id} for user {instance.user} and copy {instance.copy}")
-                ReservationLog.objects.create(
-                    reservation=instance,
-                    action='borrowing_skipped',
-                    details=f"Existing Borrowing {existing_borrowing.id} already exists for this user and copy"
-                )
-        else:
-            print(f"No Borrowing created for reservation {instance.id}: status={instance.status}, copy={instance.copy}")
+        # Note: Borrowing creation is now handled in the confirm_pickup view
+        # to prevent race conditions and duplicate borrowing records

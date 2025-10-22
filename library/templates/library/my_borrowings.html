@@ -1,0 +1,369 @@
+{% extends 'library/base.html' %}
+
+{% block title %}My Borrowings - Library System{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">
+            <span>📚</span>
+            My Borrowings
+        </h2>
+    </div>
+
+    {% if active_borrowings or past_borrowings %}
+    <!-- Tab Navigation -->
+    <div class="borrowing-tabs">
+        <button class="tab-btn active" data-filter="active">
+            Active <span class="tab-count">{{ active_borrowings|length }}</span>
+        </button>
+        <button class="tab-btn" data-filter="history">
+            History <span class="tab-count">{{ past_borrowings|length }}</span>
+        </button>
+    </div>
+
+    <!-- Active Borrowings Section -->
+    <div class="borrowing-section" data-section="active">
+        {% if active_borrowings %}
+        <div class="borrowings-grid">
+            {% for borrowing in active_borrowings %}
+            {% load tz %}
+            {% now "U" as current_timestamp %}
+            {% if borrowing.due_date %}
+                {{ borrowing.due_date|date:"U" }}
+            {% endif %}
+            <div class="borrowing-card">
+                <!-- Book Header -->
+                <div class="borrowing-header">
+                    <div class="borrowing-cover">
+                        {% if borrowing.copy.book.get_cover_url %}
+                        <img 
+                            src="{{ borrowing.copy.book.get_cover_url }}" 
+                            alt="{{ borrowing.copy.book.title }} cover"
+                            loading="lazy"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                        >
+                        <div class="borrowing-cover-fallback" style="display: none;">
+                            📚
+                        </div>
+                        {% else %}
+                        📚
+                        {% endif %}
+                    </div>
+                    
+                    <div class="borrowing-info">
+                        <h3>{{ borrowing.copy.book.title }}</h3>
+                        <p class="borrowing-author">{{ borrowing.copy.book.author|default:"Unknown Author" }}</p>
+                        
+                        <!-- Status Badge -->
+                        <div style="margin-top: 0.5rem;">
+                            {% if borrowing.status == 'return_pending' %}
+                            <span class="badge" style="--badge-color: var(--warning);">
+                                <span>⏳</span> Return Pending
+                            </span>
+                            {% else %}
+                            <span class="badge" style="--badge-color: var(--success);">
+                                <span>📖</span> Active
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Borrowing Details -->
+                <div class="borrowing-details">
+                    <div class="detail-row">
+                        <div class="detail-item">
+                            <div class="detail-icon">📅</div>
+                            <div class="detail-content">
+                                <div class="detail-label">Borrowed</div>
+                                <div class="detail-value">{{ borrowing.borrow_date|date:"M d, Y" }}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="detail-icon">📍</div>
+                            <div class="detail-content">
+                                <div class="detail-label">Location</div>
+                                <div class="detail-value location-badge">{{ borrowing.copy.location }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if borrowing.due_date %}
+                    <!-- Due Date with Progress Bar -->
+                    <div class="due-date-section">
+                        <div class="due-date-header">
+                            <span class="due-date-label">
+                                <span>⏰</span> Due Date
+                            </span>
+                            <span class="due-date-value">
+                                {{ borrowing.due_date|date:"M d, Y" }}
+                            </span>
+                        </div>
+                        
+                        <!-- Calculate days remaining -->
+                        {% now "Y-m-d" as today %}
+                        {% if borrowing.due_date|date:"Y-m-d" < today %}
+                        <div class="progress-bar">
+                            <div class="progress-fill overdue" style="width: 100%;"></div>
+                        </div>
+                        <div class="due-status overdue">
+                            <span>⚠️</span> Overdue! Please return soon.
+                        </div>
+                        {% elif borrowing.due_date|date:"Y-m-d" == today %}
+                        <div class="progress-bar">
+                            <div class="progress-fill due-today" style="width: 95%;"></div>
+                        </div>
+                        <div class="due-status due-today">
+                            <span>📌</span> Due today!
+                        </div>
+                        {% else %}
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 60%;"></div>
+                        </div>
+                        <div class="due-status">
+                            <span>✓</span> On time
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Renewal Info -->
+                    <div class="renewal-section">
+                        <div class="renewal-counter">
+                            <span class="renewal-icon">🔄</span>
+                            <span class="renewal-text">
+                                Renewals: 
+                                <strong class="{% if borrowing.renewal_count >= 2 %}renewal-max{% else %}renewal-ok{% endif %}">
+                                    {{ borrowing.renewal_count }}/2
+                                </strong>
+                            </span>
+                        </div>
+                        {% if borrowing.renewal_count < 2 %}
+                        <div class="renewal-dots">
+                            {% for i in "12" %}
+                            <div class="renewal-dot {% if forloop.counter <= borrowing.renewal_count %}used{% endif %}"></div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="borrowing-actions">
+                    {% if borrowing.status == 'return_pending' %}
+                    <div class="info-message" style="width: 100%;">
+                        <span>⏳</span>
+                        <span>Waiting for admin to verify your return...</span>
+                    </div>
+                    {% else %}
+                    {% if borrowing.renewal_count >= 2 %}
+                    <button class="btn btn-secondary" disabled style="opacity: 0.5;">
+                        <span>🔄</span> Renew (Max reached)
+                    </button>
+                    {% else %}
+                    <a href="{% url 'renew_borrowing' borrowing.id %}" 
+                       class="btn btn-primary renew-book-btn"
+                       data-book-title="{{ borrowing.copy.book.title }}"
+                       data-renewal-count="{{ borrowing.renewal_count }}"
+                       data-url="{% url 'renew_borrowing' borrowing.id %}">
+                        <span>🔄</span> Renew Book
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'request_return' borrowing.id %}" 
+                       class="btn btn-success return-book-btn"
+                       data-book-title="{{ borrowing.copy.book.title }}"
+                       data-location="{{ borrowing.copy.location }}"
+                       data-url="{% url 'request_return' borrowing.id %}">
+                        <span>📤</span> Request Return
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Info Box for Active Borrowings -->
+        <div class="info-box" style="margin-top: 2rem;">
+            <h4>📖 Borrowing Guide</h4>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-icon" style="background: var(--primary-light);">🔄</div>
+                    <div class="info-text">
+                        <strong>Renewals</strong>
+                        <p>Extend by 14 days, up to 2 times per book</p>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon" style="background: var(--success-light);">📤</div>
+                    <div class="info-text">
+                        <strong>Returns</strong>
+                        <p>Return book first, then click "Request Return"</p>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon" style="background: var(--warning-light);">⏰</div>
+                    <div class="info-text">
+                        <strong>Due Dates</strong>
+                        <p>Keep track to avoid overdue penalties</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">📚</div>
+            <h3>No active borrowings</h3>
+            <p>You don't have any books currently borrowed.</p>
+            <div style="margin-top: 1.5rem;">
+                <a href="{% url 'book_catalog' %}" class="btn btn-primary">
+                    Browse Book Catalog
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- History Section -->
+    <div class="borrowing-section" data-section="history" style="display: none;">
+        {% if past_borrowings %}
+        <div class="history-grid">
+            {% for borrowing in past_borrowings %}
+            <div class="history-card">
+                <div class="history-cover">
+                    {% if borrowing.copy.book.get_cover_url %}
+                    <img 
+                        src="{{ borrowing.copy.book.get_cover_url }}" 
+                        alt="{{ borrowing.copy.book.title }} cover"
+                        loading="lazy"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                    >
+                    <div class="history-cover-fallback" style="display: none;">
+                        📚
+                    </div>
+                    {% else %}
+                    📚
+                    {% endif %}
+                </div>
+                <div class="history-info">
+                    <h4>{{ borrowing.copy.book.title }}</h4>
+                    <p class="history-author">{{ borrowing.copy.book.author|default:"Unknown Author" }}</p>
+                    <div class="history-dates">
+                        <span class="history-date">
+                            <span>📅</span> {{ borrowing.borrow_date|date:"M d" }} - {{ borrowing.return_date|date:"M d, Y" }}
+                        </span>
+                        {% if borrowing.renewal_count > 0 %}
+                        <span class="history-renewals">
+                            <span>🔄</span> {{ borrowing.renewal_count }} renewal{{ borrowing.renewal_count|pluralize }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">📖</div>
+            <h3>No borrowing history</h3>
+            <p>Your past borrowings will appear here once you return books.</p>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">📚</div>
+        <h3>No borrowings yet</h3>
+        <p>You haven't borrowed any books yet. Reserve a book to get started!</p>
+        <div style="margin-top: 1.5rem;">
+            <a href="{% url 'book_catalog' %}" class="btn btn-primary">
+                Browse Book Catalog
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Tab switching functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const tabBtns = document.querySelectorAll('.borrowing-tabs .tab-btn');
+    const sections = document.querySelectorAll('.borrowing-section');
+    
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const filter = this.dataset.filter;
+            
+            // Update active tab
+            tabBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Show/hide sections
+            sections.forEach(section => {
+                if (section.dataset.section === filter) {
+                    section.style.display = 'block';
+                } else {
+                    section.style.display = 'none';
+                }
+            });
+        });
+    });
+
+    // ===================================
+    // CUSTOM CONFIRMATION DIALOGS
+    // ===================================
+    
+    // Renew Book Dialog
+    document.querySelectorAll('.renew-book-btn').forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            
+            const bookTitle = this.getAttribute('data-book-title');
+            const renewalCount = this.getAttribute('data-renewal-count');
+            const url = this.getAttribute('data-url');
+            
+            const confirmed = await showConfirmDialog({
+                title: 'Renew Book',
+                message: 'Extend your borrowing period for 14 more days?',
+                details: `<strong>📚 Book:</strong> ${bookTitle}<br><strong>🔄 Current Renewals:</strong> ${renewalCount}/2<br><br>Your new due date will be <strong>14 days from today</strong>.`,
+                confirmText: 'Renew for 14 Days',
+                cancelText: 'Not Now',
+                type: 'info'
+            });
+            
+            if (confirmed) {
+                showLoading('Renewing book...');
+                window.location.href = url;
+            }
+        });
+    });
+    
+    // Return Book Dialog
+    document.querySelectorAll('.return-book-btn').forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            
+            const bookTitle = this.getAttribute('data-book-title');
+            const location = this.getAttribute('data-location');
+            const url = this.getAttribute('data-url');
+            
+            const confirmed = await showConfirmDialog({
+                title: 'Request Book Return',
+                message: '⚠️ IMPORTANT: Have you physically returned the book to the library?',
+                details: `<strong>📚 Book:</strong> ${bookTitle}<br><strong>📍 Return Location:</strong> ${location}<br><br><strong>⚠️ Warning:</strong> Only request return if you have already placed the physical book back at the library. An admin will verify and confirm your return.`,
+                confirmText: 'Yes, Book Returned',
+                cancelText: 'Not Yet',
+                type: 'warning'
+            });
+            
+            if (confirmed) {
+                showLoading('Requesting return...');
+                window.location.href = url;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+

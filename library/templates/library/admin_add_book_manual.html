@@ -1,0 +1,455 @@
+{% extends 'library/base.html' %}
+
+{% block title %}Add Book Manually - Library System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .add-book-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 0 1.5rem;
+    }
+
+    .add-book-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+    }
+
+    .add-book-card h2 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-subtitle {
+        color: #6b7280;
+        margin-bottom: 2rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+
+    .form-label .required {
+        color: #dc2626;
+    }
+
+    .form-input,
+    .form-textarea,
+    .form-select {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.2s;
+        font-family: inherit;
+    }
+
+    .form-input:focus,
+    .form-textarea:focus,
+    .form-select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    .form-hint {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-top: 0.5rem;
+    }
+
+    /* Image Upload */
+    .image-upload-area {
+        border: 2px dashed #d1d5db;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s;
+        cursor: pointer;
+        background: #f9fafb;
+    }
+
+    .image-upload-area:hover {
+        border-color: #667eea;
+        background: #f0f4ff;
+    }
+
+    .image-upload-area.has-image {
+        border-style: solid;
+        border-color: #667eea;
+        background: white;
+    }
+
+    .upload-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+
+    .upload-text {
+        color: #6b7280;
+        font-size: 0.95rem;
+    }
+
+    .image-preview {
+        display: none;
+        margin-top: 1rem;
+    }
+
+    .image-preview.show {
+        display: block;
+    }
+
+    .preview-img {
+        max-width: 200px;
+        max-height: 300px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin: 0 auto;
+        display: block;
+    }
+
+    .remove-image {
+        display: inline-block;
+        margin-top: 1rem;
+        padding: 0.5rem 1rem;
+        background: #dc2626;
+        color: white;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .remove-image:hover {
+        background: #b91c1c;
+    }
+
+    /* Form Grid */
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .btn-submit {
+        flex: 1;
+        padding: 0.875rem 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-submit:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-submit:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .btn-cancel {
+        padding: 0.875rem 2rem;
+        background: white;
+        color: #6b7280;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-cancel:hover {
+        border-color: #667eea;
+        color: #667eea;
+    }
+
+    /* Error Messages */
+    .form-error {
+        color: #dc2626;
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+        display: none;
+    }
+
+    .form-error.show {
+        display: block;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .add-book-container {
+            padding: 0 1rem;
+        }
+
+        .add-book-card {
+            padding: 1.5rem;
+        }
+
+        .add-book-card h2 {
+            font-size: 1.5rem;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .image-upload-area {
+            padding: 1.5rem 1rem;
+        }
+
+        .upload-icon {
+            font-size: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="add-book-container">
+    <!-- Back Button -->
+    <a href="{% url 'admin_data_management' %}" class="back-link" style="display: inline-flex; align-items: center; gap: 0.5rem; color: #3b82f6; text-decoration: none; font-weight: 500; margin-bottom: 1.5rem; transition: all 0.2s;">
+        <span>←</span>
+        <span>Back to Data Management</span>
+    </a>
+
+    <!-- Add Book Form -->
+    <div class="add-book-card">
+        <h2>✍️ Add Book Manually</h2>
+        <p class="form-subtitle">Fill in the book details below. Required fields are marked with *</p>
+
+        <form method="POST" enctype="multipart/form-data" id="add-book-form">
+            {% csrf_token %}
+
+            <!-- Title (Required) -->
+            <div class="form-group">
+                <label class="form-label">
+                    Title <span class="required">*</span>
+                </label>
+                <input 
+                    type="text" 
+                    name="title" 
+                    class="form-input" 
+                    required
+                    placeholder="e.g., Harry Potter and the Sorcerer's Stone"
+                    maxlength="255"
+                >
+                <div class="form-error" id="title-error"></div>
+            </div>
+
+            <!-- Author and ISBN -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">
+                        Author <span class="required">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        name="author" 
+                        class="form-input" 
+                        required
+                        placeholder="e.g., J.K. Rowling"
+                        maxlength="255"
+                    >
+                    <div class="form-error" id="author-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">ISBN</label>
+                    <input 
+                        type="text" 
+                        name="isbn" 
+                        class="form-input" 
+                        placeholder="e.g., 9780590353427"
+                        maxlength="13"
+                        pattern="[0-9]{10,13}"
+                    >
+                    <div class="form-hint">10 or 13 digits (optional)</div>
+                </div>
+            </div>
+
+            <!-- Genre and Year -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Genre</label>
+                    <select name="genre" class="form-select">
+                        <option value="">Select a genre</option>
+                        <option value="Fiction">Fiction</option>
+                        <option value="Science Fiction">Science Fiction</option>
+                        <option value="Fantasy">Fantasy</option>
+                        <option value="Mystery">Mystery</option>
+                        <option value="Romance">Romance</option>
+                        <option value="Science">Science</option>
+                        <option value="History">History</option>
+                        <option value="Biography">Biography</option>
+                        <option value="Self-Help">Self-Help</option>
+                        <option value="Business">Business</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Mathematics">Mathematics</option>
+                        <option value="Reference">Reference</option>
+                        <option value="Textbook">Textbook</option>
+                        <option value="Young Adult">Young Adult</option>
+                        <option value="Children">Children</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Publication Year</label>
+                    <input 
+                        type="number" 
+                        name="publication_year" 
+                        class="form-input" 
+                        placeholder="e.g., 1997"
+                        min="1000"
+                        max="2100"
+                    >
+                </div>
+            </div>
+
+            <!-- Cover Image -->
+            <div class="form-group">
+                <label class="form-label">Cover Image</label>
+                <div class="image-upload-area" id="image-upload-area">
+                    <div class="upload-icon">🖼️</div>
+                    <div class="upload-text">Click to upload cover image</div>
+                    <div class="form-hint" style="margin-top: 0.5rem;">JPG, PNG or WEBP (Max 2MB)</div>
+                </div>
+                <input 
+                    type="file" 
+                    name="cover_image" 
+                    id="cover-image-input" 
+                    accept="image/*"
+                    style="display: none;"
+                >
+                <div class="image-preview" id="image-preview">
+                    <img id="preview-img" class="preview-img" src="" alt="Preview">
+                    <div style="text-align: center;">
+                        <span class="remove-image" id="remove-image">Remove Image</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button type="submit" class="btn-submit" id="submit-btn">
+                    ✓ Add Book
+                </button>
+                <a href="{% url 'admin_data_management' %}" class="btn-cancel">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const uploadArea = document.getElementById('image-upload-area');
+    const fileInput = document.getElementById('cover-image-input');
+    const imagePreview = document.getElementById('image-preview');
+    const previewImg = document.getElementById('preview-img');
+    const removeImage = document.getElementById('remove-image');
+    const form = document.getElementById('add-book-form');
+    const submitBtn = document.getElementById('submit-btn');
+
+    // Click to upload
+    uploadArea.addEventListener('click', () => fileInput.click());
+
+    // File input change
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            handleImageFile(file);
+        }
+    });
+
+    // Remove image
+    removeImage.addEventListener('click', (e) => {
+        e.stopPropagation();
+        fileInput.value = '';
+        imagePreview.classList.remove('show');
+        uploadArea.classList.remove('has-image');
+    });
+
+    function handleImageFile(file) {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            alert('Please select an image file');
+            return;
+        }
+
+        // Validate file size (2MB max)
+        if (file.size > 2 * 1024 * 1024) {
+            alert('Image size must be less than 2MB');
+            return;
+        }
+
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewImg.src = e.target.result;
+            imagePreview.classList.add('show');
+            uploadArea.classList.add('has-image');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Form submission
+    form.addEventListener('submit', (e) => {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Adding Book...';
+    });
+
+    // Real-time ISBN validation
+    const isbnInput = document.querySelector('[name="isbn"]');
+    if (isbnInput) {
+        isbnInput.addEventListener('input', (e) => {
+            // Remove non-digits
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+    }
+</script>
+{% endblock %}

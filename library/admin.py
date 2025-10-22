@@ -36,13 +36,43 @@ class CustomUserAdmin(UserAdmin):
 class BookResource(resources.ModelResource):
     class Meta:
         model = Book
-        fields = ('id', 'title', 'author', 'publication_year', 'genre', 'isbn')
-        export_order = ('id', 'title', 'author', 'publication_year', 'genre', 'isbn')
+        fields = ('id', 'title', 'author', 'publication_year', 'genre', 'isbn', 'cover_image')
+        export_order = ('id', 'title', 'author', 'publication_year', 'genre', 'isbn', 'cover_image')
 
 class BookAdmin(ImportExportModelAdmin):
     resource_class = BookResource
-    list_display = ('title', 'author', 'publication_year', 'genre', 'isbn')
+    list_display = ('title', 'author', 'publication_year', 'genre', 'isbn', 'has_cover')
+    list_filter = ('genre', 'publication_year')
+    search_fields = ('title', 'author', 'isbn')
+    readonly_fields = ('cover_preview',)
+    fieldsets = (
+        ('Book Information', {
+            'fields': ('title', 'author', 'publication_year', 'genre', 'isbn')
+        }),
+        ('Cover Image', {
+            'fields': ('cover_image', 'cover_preview'),
+            'description': 'Upload a cover image or leave blank to use Google Books API (requires ISBN)'
+        }),
+    )
     change_list_template = 'admin/library/book/change_list.html'  # Explicitly set the template
+
+    def has_cover(self, obj):
+        """Display if book has a cover (uploaded or available via API)"""
+        return bool(obj.cover_image or obj.isbn)
+    has_cover.boolean = True
+    has_cover.short_description = 'Has Cover'
+
+    def cover_preview(self, obj):
+        """Display cover preview in admin"""
+        from django.utils.html import format_html
+        cover_url = obj.get_cover_url()
+        if cover_url:
+            return format_html(
+                '<img src="{}" style="max-height: 200px; max-width: 150px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />',
+                cover_url
+            )
+        return format_html('<p style="color: #999;">No cover available</p>')
+    cover_preview.short_description = 'Cover Preview'
 
     def get_urls(self):
         urls = super().get_urls()
@@ -168,63 +198,109 @@ class ReservationAdmin(admin.ModelAdmin):
     mark_canceled.short_description = "Mark as canceled"
 
 class BorrowingAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'copy', 'borrow_date', 'return_date', 'renewal_count')
-    list_filter = ('return_date',)
-    actions = ['mark_returned', 'renew_borrowing']
-
+    list_display = ('id', 'user', 'copy', 'borrow_date', 'due_date', 'return_date', 'renewal_count', 'status')
+    list_filter = ('status', 'return_date')
+    actions = ['confirm_return', 'renew_borrowing']  # Removed mark_returned to avoid confusion
+    
     def get_queryset(self, request):
         qs = super().get_queryset(request).select_related('user', 'copy')
-        print(f"BorrowingAdmin queryset: {qs}")
         return qs
 
-    def mark_returned(self, request, queryset):
-        updated_count = queryset.filter(return_date__isnull=True).update(return_date=timezone.now())
-        if updated_count > 0:
-            self.message_user(request, f"Marked {updated_count} borrowings as returned")
-        else:
-            self.message_user(request, "No active borrowings were updated", level=messages.WARNING)
-
-    def renew_borrowing(self, request, queryset):
-        renewed_count = 0
+    def confirm_return(self, request, queryset):
+        """Confirm returns after physical verification (handles both pending and direct returns)"""
+        confirmed_count = 0
+        auto_assigned_count = 0
+        
         for borrowing in queryset:
-            # Check if the borrowing is still active (not returned)
-            if borrowing.return_date and borrowing.return_date < timezone.now():
-                self.message_user(
-                    request,
-                    f"Cannot renew borrowing for {borrowing.user.username}: Book was due on {borrowing.return_date}",
-                    level=messages.WARNING
-                )
-                continue
-            if borrowing.return_date is None:
-                self.message_user(
-                    request,
-                    f"Cannot renew borrowing for {borrowing.user.username}: Return date not set",
-                    level=messages.WARNING
-                )
-                continue
-            # Check renewal limit
-            if borrowing.renewal_count < 2:
-                borrowing.renewal_count += 1
-                # Extend the return_date by 14 days from the current return_date
-                borrowing.return_date = borrowing.return_date + timedelta(days=14)
+            # Handle both return_pending status and direct admin returns
+            if borrowing.status in ['return_pending', 'active'] and borrowing.return_date is None:
+                # CRITICAL: Set return_date and status FIRST before auto-assignment
+                # This ensures the copy appears as truly available in availability queries
+                borrowing.return_date = timezone.now()
+                borrowing.status = 'returned'
                 borrowing.save()
+                confirmed_count += 1
+                
+                # Now that the copy is truly available, auto-assign to next pending reservation
+                book = borrowing.copy.book
+                pending_reservations = Reservation.objects.filter(
+                    book=book,
+                    status='pending'
+                ).order_by('reservation_date')  # First come, first served
+                
+                if pending_reservations.exists():
+                    # Assign to the first pending reservation
+                    next_reservation = pending_reservations.first()
+                    next_reservation.copy = borrowing.copy
+                    next_reservation.status = 'assigned'
+                    next_reservation.expiration_date = timezone.now() + timedelta(days=3)
+                    next_reservation.save()
+                    auto_assigned_count += 1
+                    
+                    # Log the action
+                    ReservationLog.objects.create(
+                        reservation=next_reservation,
+                        action='auto_assigned_on_return',
+                        details=f'Auto-assigned copy {borrowing.copy.location} after return by {borrowing.user.username}'
+                    )
+                    
+                    self.message_user(
+                        request,
+                        f"📚 Copy auto-assigned to {next_reservation.user.username}'s pending reservation!",
+                        level=messages.SUCCESS
+                    )
+                
                 self.message_user(
                     request,
-                    f"Renewed borrowing for {borrowing.user.username}. New return date: {borrowing.return_date}",
+                    f"✓ Confirmed return for {borrowing.user.username} - {borrowing.copy.book.title}",
                     level=messages.SUCCESS
                 )
-                renewed_count += 1
+            elif borrowing.return_date is not None:
+                self.message_user(
+                    request,
+                    f"Borrowing for {borrowing.user.username} is already returned",
+                    level=messages.WARNING
+                )
             else:
                 self.message_user(
                     request,
-                    f"Cannot renew borrowing for {borrowing.user.username}: Max renewals (2) reached",
+                    f"Cannot process borrowing for {borrowing.user.username} (status: {borrowing.status})",
+                    level=messages.WARNING
+                )
+        
+        if confirmed_count > 0:
+            summary = f"Confirmed {confirmed_count} return(s)"
+            if auto_assigned_count > 0:
+                summary += f" and auto-assigned {auto_assigned_count} to pending reservations"
+            self.message_user(request, summary)
+
+    def renew_borrowing(self, request, queryset):
+        """Admin renews borrowings (legacy support)"""
+        renewed_count = 0
+        for borrowing in queryset:
+            can_renew, message = borrowing.can_renew()
+            if can_renew:
+                success, result_message = borrowing.renew()
+                if success:
+                    self.message_user(
+                        request,
+                        f"Renewed borrowing for {borrowing.user.username}. {result_message}",
+                        level=messages.SUCCESS
+                    )
+                    renewed_count += 1
+                else:
+                    self.message_user(request, result_message, level=messages.WARNING)
+            else:
+                self.message_user(
+                    request,
+                    f"Cannot renew for {borrowing.user.username}: {message}",
                     level=messages.WARNING
                 )
         if renewed_count == 0 and not queryset.exists():
             self.message_user(request, "No borrowings were renewed", level=messages.WARNING)
 
-    mark_returned.short_description = "Mark as returned"
-    renew_borrowing.short_description = "Renew borrowing"
+    confirm_return.short_description = "✓ Confirm return (verify book physically received)"
+    renew_borrowing.short_description = "Renew borrowing (+14 days)"
 
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Book, BookAdmin)

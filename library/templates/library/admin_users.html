@@ -1,0 +1,534 @@
+{% extends 'library/base.html' %}
+
+{% block title %}Manage Users - Library Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .users-container {
+        max-width: 1400px;
+        margin: 2rem auto;
+        padding: 0 1.5rem;
+    }
+
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-subtitle {
+        color: #6b7280;
+        font-size: 1rem;
+    }
+
+    /* Stats Overview */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-box {
+        background: white;
+        border-radius: 8px;
+        padding: 1.25rem;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .stat-box-label {
+        color: #6b7280;
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-box-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    /* Controls Bar */
+    .controls-bar {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .search-filter-group {
+        display: flex;
+        gap: 1rem;
+        flex: 1;
+        flex-wrap: wrap;
+    }
+
+    .search-box {
+        flex: 1;
+        min-width: 250px;
+        position: relative;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 0.75rem 1rem 0.75rem 2.5rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 0.875rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        font-size: 1.1rem;
+    }
+
+    .filter-select {
+        padding: 0.75rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .add-user-btn {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2);
+    }
+
+    .add-user-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(59, 130, 246, 0.3);
+        color: white;
+    }
+
+    /* Users Table */
+    .users-table-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+    }
+
+    .users-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .users-table thead {
+        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+    }
+
+    .users-table th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    .users-table tbody tr {
+        cursor: pointer;
+        transition: all 0.2s;
+        border-bottom: 1px solid #f3f4f6;
+    }
+
+    .users-table tbody tr:hover {
+        background: #f9fafb;
+        transform: scale(1.01);
+    }
+
+    .users-table td {
+        padding: 1rem;
+        color: #4b5563;
+        font-size: 0.95rem;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .user-details {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .user-name {
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .user-email {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+
+    .role-badge {
+        display: inline-block;
+        padding: 0.375rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .role-badge.admin {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .role-badge.student {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .role-badge.teacher {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .stats-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.625rem;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .stats-badge.borrowings {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .stats-badge.reservations {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .stats-badge.zero {
+        background: #f3f4f6;
+        color: #6b7280;
+    }
+
+    /* Pagination */
+    .pagination-container {
+        padding: 1.5rem;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .pagination-info {
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .page-link {
+        padding: 0.5rem 0.875rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        text-decoration: none;
+        color: #374151;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+    .page-link:hover {
+        background: #f3f4f6;
+        border-color: #d1d5db;
+    }
+
+    .page-link.active {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+    }
+
+    .page-link.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6b7280;
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+
+    .empty-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .users-table {
+            font-size: 0.875rem;
+        }
+
+        .users-table th,
+        .users-table td {
+            padding: 0.75rem 0.5rem;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            font-size: 0.875rem;
+        }
+
+        .controls-bar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .search-filter-group {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="users-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">Manage Users</h1>
+        <p class="page-subtitle">View and manage all library users</p>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="stats-row">
+        <div class="stat-box">
+            <div class="stat-box-label">Total Users</div>
+            <div class="stat-box-value">{{ total_users }}</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-box-label">Students</div>
+            <div class="stat-box-value">{{ total_students }}</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-box-label">Admins</div>
+            <div class="stat-box-value">{{ total_admins }}</div>
+        </div>
+    </div>
+
+    <!-- Controls Bar -->
+    <div class="controls-bar">
+        <form method="GET" class="search-filter-group">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input 
+                    type="text" 
+                    name="search" 
+                    class="search-input" 
+                    placeholder="Search by name, username, or email..."
+                    value="{{ search_query }}"
+                >
+            </div>
+
+            <select name="role" class="filter-select" onchange="this.form.submit()">
+                <option value="">All Roles</option>
+                <option value="student" {% if role_filter == 'student' %}selected{% endif %}>Students Only</option>
+                <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admins Only</option>
+            </select>
+
+            <button type="submit" hidden>Search</button>
+        </form>
+
+        <a href="/admin/library/user/add/" class="add-user-btn">
+            <span>➕</span>
+            <span>Add User</span>
+        </a>
+    </div>
+
+    <!-- Users Table -->
+    <div class="users-table-container">
+        {% if users %}
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Role</th>
+                        <th>Joined</th>
+                        <th>Active Borrowings</th>
+                        <th>Pending Reservations</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                        <tr class="user-row" data-user-url="{% url 'admin_user_detail' user.id %}">
+                            <td>
+                                <div class="user-info">
+                                    <div class="user-avatar">
+                                        {{ user.username|slice:":1"|upper }}
+                                    </div>
+                                    <div class="user-details">
+                                        <span class="user-name">
+                                            {% if user.first_name or user.last_name %}
+                                                {{ user.first_name }} {{ user.last_name }}
+                                            {% else %}
+                                                {{ user.username }}
+                                            {% endif %}
+                                        </span>
+                                        <span class="user-email">{{ user.email|default:"No email" }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if user.role == 'admin' %}
+                                    <span class="role-badge admin">👨‍💼 Admin</span>
+                                {% elif user.role == 'teacher' %}
+                                    <span class="role-badge teacher">👨‍🏫 Teacher</span>
+                                {% else %}
+                                    <span class="role-badge student">🎓 Student</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                            <td>
+                                {% if user.active_borrowings_count > 0 %}
+                                    <span class="stats-badge borrowings">
+                                        📖 {{ user.active_borrowings_count }}
+                                    </span>
+                                {% else %}
+                                    <span class="stats-badge zero">0</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.pending_reservations_count > 0 %}
+                                    <span class="stats-badge reservations">
+                                        🎫 {{ user.pending_reservations_count }}
+                                    </span>
+                                {% else %}
+                                    <span class="stats-badge zero">0</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            {% if users.has_other_pages %}
+                <div class="pagination-container">
+                    <div class="pagination-info">
+                        Page {{ users.number }} of {{ users.paginator.num_pages }}
+                    </div>
+                    <div class="pagination">
+                        {% if users.has_previous %}
+                            <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}" class="page-link">First</a>
+                            <a href="?page={{ users.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}" class="page-link">Previous</a>
+                        {% endif %}
+
+                        <span class="page-link active">{{ users.number }}</span>
+
+                        {% if users.has_next %}
+                            <a href="?page={{ users.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}" class="page-link">Next</a>
+                            <a href="?page={{ users.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}" class="page-link">Last</a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">👥</div>
+                <div class="empty-title">No users found</div>
+                <p>{% if search_query %}Try adjusting your search criteria{% else %}No users in the system yet{% endif %}</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // Make user rows clickable
+    document.addEventListener('DOMContentLoaded', function() {
+        const userRows = document.querySelectorAll('.user-row');
+        userRows.forEach(function(row) {
+            row.addEventListener('click', function() {
+                const url = this.getAttribute('data-user-url');
+                if (url) {
+                    window.location.href = url;
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

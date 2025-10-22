@@ -1,0 +1,303 @@
+{% extends 'library/base.html' %}
+
+{% block title %}My Reservations - Library System{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">
+            <span>📋</span>
+            My Reservations
+        </h2>
+    </div>
+    
+    {% if reservations %}
+    <!-- Status Filter Tabs -->
+    <div class="reservation-tabs">
+        <button class="tab-btn active" data-filter="all">
+            All <span class="tab-count">{{ reservations|length }}</span>
+        </button>
+        <button class="tab-btn" data-filter="pending">
+            Pending <span class="tab-count">{{ reservations|length }}</span>
+        </button>
+        <button class="tab-btn" data-filter="assigned">
+            Ready <span class="tab-count">{{ reservations|length }}</span>
+        </button>
+        <button class="tab-btn" data-filter="picked_up">
+            Completed <span class="tab-count">{{ reservations|length }}</span>
+        </button>
+    </div>
+
+    <!-- Reservations Grid -->
+    <div class="reservations-grid">
+        {% for reservation in reservations %}
+        <div class="reservation-card" data-status="{{ reservation.status }}">
+            <!-- Book Cover & Info -->
+            <div class="reservation-header">
+                <div class="reservation-cover">
+                    {% if reservation.book.get_cover_url %}
+                    <img 
+                        src="{{ reservation.book.get_cover_url }}" 
+                        alt="{{ reservation.book.title }} cover"
+                        loading="lazy"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                    >
+                    <div class="reservation-cover-fallback" style="display: none;">
+                        📚
+                    </div>
+                    {% else %}
+                    📚
+                    {% endif %}
+                </div>
+                
+                <div class="reservation-info">
+                    <h3>{{ reservation.book.title }}</h3>
+                    <p class="reservation-author">{{ reservation.book.author|default:"Unknown Author" }}</p>
+                    
+                    <!-- Status Badge -->
+                    <div style="margin-top: 0.5rem;">
+                        {% if reservation.status == 'pending' %}
+                        <span class="badge" style="--badge-color: var(--warning);">
+                            <span>⏳</span> Pending
+                        </span>
+                        {% elif reservation.status == 'assigned' %}
+                        <span class="badge" style="--badge-color: var(--success);">
+                            <span>✓</span> Ready for Pickup
+                        </span>
+                        {% elif reservation.status == 'picked_up' %}
+                        <span class="badge" style="--badge-color: var(--info);">
+                            <span>📖</span> Picked Up
+                        </span>
+                        {% elif reservation.status == 'expired' %}
+                        <span class="badge" style="--badge-color: var(--danger);">
+                            <span>⏰</span> Expired
+                        </span>
+                        {% elif reservation.status == 'canceled' %}
+                        <span class="badge" style="--badge-color: var(--gray-500);">
+                            <span>✕</span> Canceled
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline / Details -->
+            <div class="reservation-timeline">
+                <div class="timeline-item">
+                    <div class="timeline-icon">📅</div>
+                    <div class="timeline-content">
+                        <div class="timeline-label">Reserved</div>
+                        <div class="timeline-value">{{ reservation.reservation_date|date:"M d, Y" }}</div>
+                        <div class="timeline-time">{{ reservation.reservation_date|date:"g:i A" }}</div>
+                    </div>
+                </div>
+
+                {% if reservation.status == 'assigned' and reservation.expiration_date %}
+                <div class="timeline-item timeline-highlight">
+                    <div class="timeline-icon">⏰</div>
+                    <div class="timeline-content">
+                        <div class="timeline-label">Pick up by</div>
+                        <div class="timeline-value urgent">{{ reservation.expiration_date|date:"M d, Y" }}</div>
+                        <div class="timeline-time">{{ reservation.expiration_date|date:"g:i A" }}</div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if reservation.copy %}
+                <div class="timeline-item">
+                    <div class="timeline-icon">📍</div>
+                    <div class="timeline-content">
+                        <div class="timeline-label">Location</div>
+                        <div class="timeline-value location">{{ reservation.copy.location }}</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="reservation-actions">
+                {% if reservation.status == 'assigned' %}
+                <a href="{% url 'confirm_pickup' reservation.id %}" 
+                   class="btn btn-success confirm-pickup-btn"
+                   data-book-title="{{ reservation.book.title }}"
+                   data-location="{{ reservation.copy.location }}"
+                   data-url="{% url 'confirm_pickup' reservation.id %}">
+                    <span>✓</span> Confirm Pickup
+                </a>
+                <a href="{% url 'cancel_reservation' reservation.id %}" 
+                   class="btn btn-secondary cancel-reservation-btn"
+                   data-url="{% url 'cancel_reservation' reservation.id %}">
+                    Cancel
+                </a>
+                {% elif reservation.status == 'pending' %}
+                <div class="info-message">
+                    <span>⏳</span>
+                    <span>Waiting for available copy...</span>
+                </div>
+                <a href="{% url 'cancel_reservation' reservation.id %}" 
+                   class="btn btn-danger cancel-reservation-btn"
+                   data-url="{% url 'cancel_reservation' reservation.id %}">
+                    Cancel Reservation
+                </a>
+                {% elif reservation.status == 'picked_up' %}
+                <div class="success-message">
+                    <span>✓</span>
+                    <span>Book borrowed! Check My Borrowings for due date.</span>
+                </div>
+                {% elif reservation.status == 'expired' %}
+                <div class="warning-message">
+                    <span>⏰</span>
+                    <span>Reservation expired. Book returned to queue.</span>
+                </div>
+                {% elif reservation.status == 'canceled' %}
+                <div class="info-message">
+                    <span>ℹ</span>
+                    <span>This reservation was canceled.</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Info Box -->
+    <div class="info-box">
+        <h4>📌 How Reservations Work</h4>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-icon pending">⏳</div>
+                <div class="info-text">
+                    <strong>Pending</strong>
+                    <p>Waiting in queue for an available copy</p>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-icon assigned">✓</div>
+                <div class="info-text">
+                    <strong>Ready for Pickup</strong>
+                    <p>Copy assigned! Go to library within 3 days</p>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-icon picked-up">📖</div>
+                <div class="info-text">
+                    <strong>Picked Up</strong>
+                    <p>Book borrowed successfully</p>
+                </div>
+            </div>
+        </div>
+        <div class="tip-box">
+            <strong>💡 Pro Tip:</strong> You can have up to 3 active reservations at once. When a copy is assigned, 
+            you'll see the exact shelf location. Make sure to pick it up within 3 days!
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">📋</div>
+        <h3>No reservations yet</h3>
+        <p>Reserve books to hold your spot in line when copies are unavailable.</p>
+        <div style="margin-top: 1.5rem;">
+            <a href="{% url 'book_catalog' %}" class="btn btn-primary">
+                Browse Book Catalog
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Tab filtering functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const reservationCards = document.querySelectorAll('.reservation-card');
+    
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const filter = this.dataset.filter;
+            
+            // Update active tab
+            tabBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Filter cards
+            reservationCards.forEach(card => {
+                if (filter === 'all' || card.dataset.status === filter) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    });
+    
+    // Update counts
+    function updateCounts() {
+        const all = reservationCards.length;
+        const pending = document.querySelectorAll('[data-status="pending"]').length;
+        const assigned = document.querySelectorAll('[data-status="assigned"]').length;
+        const picked_up = document.querySelectorAll('[data-status="picked_up"]').length;
+        
+        if (tabBtns.length >= 4) {
+            tabBtns[0].querySelector('.tab-count').textContent = all;
+            tabBtns[1].querySelector('.tab-count').textContent = pending;
+            tabBtns[2].querySelector('.tab-count').textContent = assigned;
+            tabBtns[3].querySelector('.tab-count').textContent = picked_up;
+        }
+    }
+    
+    updateCounts();
+    
+    // ===================================
+    // CUSTOM CONFIRMATION DIALOGS
+    // ===================================
+    
+    // Confirm Pickup Dialog
+    document.querySelectorAll('.confirm-pickup-btn').forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            
+            const bookTitle = this.getAttribute('data-book-title');
+            const location = this.getAttribute('data-location');
+            const url = this.getAttribute('data-url');
+            
+            const confirmed = await showConfirmDialog({
+                title: 'Confirm Book Pickup',
+                message: 'Have you physically picked up this book from the library?',
+                details: `<strong>📚 Book:</strong> ${bookTitle}<br><strong>📍 Location:</strong> ${location}<br><br>Click <strong>Confirm</strong> only if you have the book in hand.`,
+                confirmText: 'Yes, I Have the Book',
+                cancelText: 'Not Yet',
+                type: 'info'
+            });
+            
+            if (confirmed) {
+                showLoading('Confirming pickup...');
+                window.location.href = url;
+            }
+        });
+    });
+    
+    // Cancel Reservation Dialog
+    document.querySelectorAll('.cancel-reservation-btn').forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            
+            const url = this.getAttribute('data-url');
+            
+            const confirmed = await showConfirmDialog({
+                title: 'Cancel Reservation',
+                message: 'Are you sure you want to cancel this reservation?',
+                details: 'This action cannot be undone. The book will become available for other students.',
+                confirmText: 'Yes, Cancel It',
+                cancelText: 'Keep Reservation',
+                type: 'danger'
+            });
+            
+            if (confirmed) {
+                showLoading('Canceling reservation...');
+                window.location.href = url;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

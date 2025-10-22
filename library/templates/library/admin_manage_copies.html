@@ -1,0 +1,820 @@
+{% extends 'library/base.html' %}
+
+{% block title %}Manage Copies - Library System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .copies-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1.5rem;
+    }
+
+    .copies-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+        margin-bottom: 2rem;
+    }
+
+    .copies-card h2 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-subtitle {
+        color: #6b7280;
+        margin-bottom: 2rem;
+    }
+
+    /* Search and Filter */
+    .search-filter {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .search-input {
+        flex: 1;
+        padding: 0.875rem 1.25rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.2s;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+    }
+
+    .filter-select {
+        padding: 0.875rem 1.25rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 1rem;
+        background: white;
+        cursor: pointer;
+        min-width: 180px;
+    }
+
+    /* Books Table */
+    .books-table-container {
+        overflow-x: auto;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+    }
+
+    .books-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .books-table thead {
+        background: #f9fafb;
+    }
+
+    .books-table th {
+        padding: 1rem 1.5rem;
+        text-align: left;
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .books-table td {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #f3f4f6;
+        color: #1f2937;
+    }
+
+    .books-table tbody tr:hover {
+        background: #f9fafb;
+    }
+
+    .books-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .book-title {
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.25rem;
+    }
+
+    .book-author {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+
+    .copy-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.375rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .copy-badge.has-copies {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .copy-badge.no-copies {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .btn-add-copy {
+        padding: 0.5rem 1rem;
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-add-copy:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-edit {
+        padding: 0.5rem 1rem;
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-left: 0.5rem;
+    }
+
+    .btn-edit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-manage {
+        padding: 0.5rem 1rem;
+        background: white;
+        color: #6b7280;
+        border: 2px solid #e5e7eb;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-left: 0.5rem;
+    }
+
+    .btn-manage:hover {
+        border-color: #f59e0b;
+        color: #f59e0b;
+    }
+
+    /* Modal */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        padding: 1rem;
+        overflow-y: auto;
+    }
+
+    .modal.show {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        max-width: 600px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .modal-header h3 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .btn-close {
+        width: 32px;
+        height: 32px;
+        border: none;
+        background: #f3f4f6;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 1.25rem;
+        color: #6b7280;
+        transition: all 0.2s;
+    }
+
+    .btn-close:hover {
+        background: #e5e7eb;
+        transform: rotate(90deg);
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.875rem 1.25rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.2s;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+    }
+
+    .form-info {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-top: 0.5rem;
+    }
+
+    .location-preview {
+        background: #fffbeb;
+        border: 2px solid #fef3c7;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+
+    .location-preview-title {
+        font-weight: 600;
+        color: #92400e;
+        margin-bottom: 0.5rem;
+    }
+
+    .location-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .location-tag {
+        padding: 0.375rem 0.75rem;
+        background: white;
+        border: 1px solid #fbbf24;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-family: 'Courier New', monospace;
+        color: #92400e;
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .btn-submit {
+        flex: 1;
+        padding: 1rem 2rem;
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-submit:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-submit:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .btn-cancel {
+        padding: 1rem 2rem;
+        background: white;
+        color: #6b7280;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-cancel:hover {
+        border-color: #f59e0b;
+        color: #f59e0b;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6b7280;
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .copies-container {
+            padding: 0 1rem;
+        }
+
+        .copies-card {
+            padding: 1.5rem;
+        }
+
+        .copies-card h2 {
+            font-size: 1.5rem;
+        }
+
+        .search-filter {
+            flex-direction: column;
+        }
+
+        .filter-select {
+            width: 100%;
+        }
+
+        /* Convert table to cards on mobile */
+        .books-table-container {
+            border: none;
+        }
+
+        .books-table thead {
+            display: none;
+        }
+
+        .books-table,
+        .books-table tbody,
+        .books-table tr,
+        .books-table td {
+            display: block;
+            width: 100%;
+        }
+
+        .books-table tr {
+            margin-bottom: 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .books-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .books-table td:last-child {
+            border-bottom: none;
+        }
+
+        .books-table td:before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: #6b7280;
+            display: block;
+            margin-bottom: 0.25rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .modal-content {
+            padding: 1.5rem;
+        }
+
+        .modal-actions {
+            flex-direction: column;
+        }
+
+        .btn-add-copy,
+        .btn-edit {
+            width: 100%;
+            margin-left: 0;
+            margin-top: 0.5rem;
+        }
+
+        .btn-edit {
+            margin-top: 0.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="copies-container">
+    <!-- Back Button -->
+    <a href="{% url 'admin_data_management' %}" class="back-link" style="display: inline-flex; align-items: center; gap: 0.5rem; color: #3b82f6; text-decoration: none; font-weight: 500; margin-bottom: 1.5rem; transition: all 0.2s;">
+        <span>←</span>
+        <span>Back to Data Management</span>
+    </a>
+
+    <!-- Copies Card -->
+    <div class="copies-card">
+        <h2>📚 Manage Book Copies</h2>
+        <p class="card-subtitle">Add, edit, or remove physical copies of books in your library</p>
+
+        <!-- Search and Filter -->
+        <div class="search-filter">
+            <input 
+                type="text" 
+                id="search-input" 
+                class="search-input" 
+                placeholder="Search by title or author..."
+            >
+            <select id="filter-select" class="filter-select">
+                <option value="all">All Books</option>
+                <option value="with-copies">With Copies</option>
+                <option value="without-copies">Without Copies</option>
+            </select>
+        </div>
+
+        <!-- Books Table -->
+        <div class="books-table-container">
+            <table class="books-table">
+                <thead>
+                    <tr>
+                        <th>Book</th>
+                        <th>Genre</th>
+                        <th>Copies</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="books-tbody">
+                    {% if books %}
+                        {% for book in books %}
+                        <tr>
+                            <td data-label="Book">
+                                <div class="book-title">{{ book.title }}</div>
+                                <div class="book-author">by {{ book.author }}</div>
+                            </td>
+                            <td data-label="Genre">
+                                {{ book.genre|default:"Not specified" }}
+                            </td>
+                            <td data-label="Copies">
+                                {% if book.bookcopy_set.count > 0 %}
+                                    <span class="copy-badge has-copies">
+                                        ✓ {{ book.bookcopy_set.count }} {{ book.bookcopy_set.count|pluralize:"copy,copies" }}
+                                    </span>
+                                {% else %}
+                                    <span class="copy-badge no-copies">
+                                        ✗ No copies
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Actions">
+                                <button class="btn-add-copy" onclick="openAddModal({{ book.id }}, '{{ book.title|escapejs }}', '{{ book.author|escapejs }}', '{{ book.genre|default:''|escapejs }}')">
+                                    + Add Copy
+                                </button>
+                                <button class="btn-edit" onclick="openEditModal({{ book.id }}, '{{ book.title|escapejs }}', '{{ book.author|escapejs }}', '{{ book.genre|default:''|escapejs }}', '{{ book.publication_year|default:''|escapejs }}')">
+                                    ✏️ Edit
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">📚</div>
+                                    <h3>No books found</h3>
+                                    <p>Add books to your library first before managing copies</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Copy Modal -->
+<div class="modal" id="add-copy-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>📦 Add Copies</h3>
+            <button class="btn-close" onclick="closeAddModal()">×</button>
+        </div>
+
+        <form method="POST" id="add-copy-form">
+            {% csrf_token %}
+            <input type="hidden" name="book_id" id="modal-book-id">
+
+            <div class="form-group">
+                <label class="form-label">Book</label>
+                <div id="modal-book-info" style="padding: 0.875rem 1.25rem; background: #f9fafb; border-radius: 8px;">
+                    <div style="font-weight: 600; color: #1f2937;" id="modal-book-title"></div>
+                    <div style="font-size: 0.875rem; color: #6b7280;" id="modal-book-author"></div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="copy-count">Number of Copies</label>
+                <input 
+                    type="number" 
+                    id="copy-count" 
+                    name="copy_count" 
+                    class="form-input" 
+                    min="1" 
+                    max="50" 
+                    value="1"
+                    required
+                >
+                <div class="form-info">Enter the number of physical copies to add (1-50)</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="location-prefix">Location Prefix (Optional)</label>
+                <input 
+                    type="text" 
+                    id="location-prefix" 
+                    name="location_prefix" 
+                    class="form-input" 
+                    placeholder="e.g., 1-A or 2-B"
+                    maxlength="10"
+                    pattern="^\d+-[A-Z]$"
+                >
+                <div class="form-info">Format: SHELF-SECTION (e.g., 1-A, 2-B). Leave blank for default "1-A"</div>
+            </div>
+
+            <div class="location-preview" id="location-preview" style="display: none;">
+                <div class="location-preview-title">📍 Generated Locations:</div>
+                <div class="location-list" id="location-list"></div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="submit" class="btn-submit">
+                    ✓ Add Copies
+                </button>
+                <button type="button" class="btn-cancel" onclick="closeAddModal()">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Book Modal -->
+<div class="modal" id="edit-book-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>✏️ Edit Book Details</h3>
+            <button class="btn-close" onclick="closeEditModal()">×</button>
+        </div>
+
+        <form method="POST" action="{% url 'admin_edit_book' %}" id="edit-book-form">
+            {% csrf_token %}
+            <input type="hidden" name="book_id" id="edit-book-id">
+
+            <div class="form-group">
+                <label class="form-label" for="edit-title">Title</label>
+                <input 
+                    type="text" 
+                    id="edit-title" 
+                    name="title" 
+                    class="form-input" 
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="edit-author">Author</label>
+                <input 
+                    type="text" 
+                    id="edit-author" 
+                    name="author" 
+                    class="form-input" 
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="edit-genre">Genre</label>
+                <input 
+                    type="text" 
+                    id="edit-genre" 
+                    name="genre" 
+                    class="form-input" 
+                    placeholder="e.g., Fiction, Science, History"
+                >
+                <div class="form-info">Add or change the genre to improve search and organization</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="edit-year">Publication Year</label>
+                <input 
+                    type="number" 
+                    id="edit-year" 
+                    name="publication_year" 
+                    class="form-input" 
+                    min="1000" 
+                    max="2100"
+                    placeholder="e.g., 2023"
+                >
+            </div>
+
+            <div class="modal-actions">
+                <button type="submit" class="btn-submit">
+                    ✓ Save Changes
+                </button>
+                <button type="button" class="btn-cancel" onclick="closeEditModal()">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let currentBookGenre = '';
+
+    // Search functionality
+    const searchInput = document.getElementById('search-input');
+    const filterSelect = document.getElementById('filter-select');
+    const booksTable = document.getElementById('books-tbody');
+
+    searchInput.addEventListener('input', filterBooks);
+    filterSelect.addEventListener('change', filterBooks);
+
+    function filterBooks() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const filterValue = filterSelect.value;
+        const rows = booksTable.getElementsByTagName('tr');
+
+        Array.from(rows).forEach(row => {
+            if (row.querySelector('.empty-state')) {
+                return; // Skip empty state row
+            }
+
+            const title = row.querySelector('.book-title')?.textContent.toLowerCase() || '';
+            const author = row.querySelector('.book-author')?.textContent.toLowerCase() || '';
+            const hasCopies = row.querySelector('.copy-badge.has-copies') !== null;
+
+            const matchesSearch = title.includes(searchTerm) || author.includes(searchTerm);
+            const matchesFilter = filterValue === 'all' || 
+                                 (filterValue === 'with-copies' && hasCopies) ||
+                                 (filterValue === 'without-copies' && !hasCopies);
+
+            row.style.display = matchesSearch && matchesFilter ? '' : 'none';
+        });
+    }
+
+    // Modal functions
+    function openAddModal(bookId, title, author, genre) {
+        currentBookGenre = genre || '';
+        
+        document.getElementById('modal-book-id').value = bookId;
+        document.getElementById('modal-book-title').textContent = title;
+        document.getElementById('modal-book-author').textContent = `by ${author}`;
+        document.getElementById('add-copy-modal').classList.add('show');
+        
+        updateLocationPreview();
+    }
+
+    function closeAddModal() {
+        document.getElementById('add-copy-modal').classList.remove('show');
+        document.getElementById('add-copy-form').reset();
+        document.getElementById('location-preview').style.display = 'none';
+    }
+
+    // Edit Book Modal Functions
+    function openEditModal(bookId, title, author, genre, year) {
+        document.getElementById('edit-book-id').value = bookId;
+        document.getElementById('edit-title').value = title;
+        document.getElementById('edit-author').value = author;
+        document.getElementById('edit-genre').value = genre || '';
+        document.getElementById('edit-year').value = year || '';
+        document.getElementById('edit-book-modal').classList.add('show');
+    }
+
+    function closeEditModal() {
+        document.getElementById('edit-book-modal').classList.remove('show');
+        document.getElementById('edit-book-form').reset();
+    }
+
+    // Update location preview
+    const copyCountInput = document.getElementById('copy-count');
+    const locationPrefixInput = document.getElementById('location-prefix');
+
+    copyCountInput.addEventListener('input', updateLocationPreview);
+    locationPrefixInput.addEventListener('input', updateLocationPreview);
+
+    function updateLocationPreview() {
+        const count = parseInt(copyCountInput.value) || 0;
+        const prefix = locationPrefixInput.value.trim().toUpperCase();
+        const locationPreview = document.getElementById('location-preview');
+        const locationList = document.getElementById('location-list');
+
+        if (count < 1 || count > 50) {
+            locationPreview.style.display = 'none';
+            return;
+        }
+
+        // Use provided prefix or default to "1-A"
+        let finalPrefix = prefix;
+        
+        // Validate format (should be DIGIT-LETTER like "1-A")
+        const prefixPattern = /^\d+-[A-Z]$/;
+        if (!finalPrefix || !prefixPattern.test(finalPrefix)) {
+            finalPrefix = '1-A';  // Default shelf 1, section A
+        }
+
+        // Generate location tags (format: 1-A-1, 1-A-2, etc.)
+        const locations = [];
+        for (let i = 1; i <= Math.min(count, 10); i++) {
+            locations.push(`${finalPrefix}-${i}`);
+        }
+
+        if (count > 10) {
+            locations.push('...');
+        }
+
+        locationList.innerHTML = locations.map(loc => 
+            `<div class="location-tag">${loc}</div>`
+        ).join('');
+
+        locationPreview.style.display = 'block';
+    }
+
+    // Close modal on outside click
+    document.getElementById('add-copy-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'add-copy-modal') {
+            closeAddModal();
+        }
+    });
+
+    document.getElementById('edit-book-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'edit-book-modal') {
+            closeEditModal();
+        }
+    });
+
+    // Form submission
+    document.getElementById('add-copy-form').addEventListener('submit', (e) => {
+        const submitBtn = e.target.querySelector('.btn-submit');
+        submitBtn.disabled = true;
+        submitBtn.textContent = '⏳ Adding...';
+    });
+
+    document.getElementById('edit-book-form').addEventListener('submit', (e) => {
+        const submitBtn = e.target.querySelector('.btn-submit');
+        submitBtn.disabled = true;
+        submitBtn.textContent = '⏳ Saving...';
+    });
+</script>
+{% endblock %}

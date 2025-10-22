@@ -1,0 +1,319 @@
+{% extends "library/base.html" %}
+
+{% block title %}Page Not Found - Library System{% endblock %}
+
+{% block content %}
+<style>
+    .error-container {
+        max-width: 700px;
+        margin: 0 auto;
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .error-code {
+        font-size: 120px;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1;
+        margin-bottom: 20px;
+        animation: fadeInDown 0.6s ease;
+    }
+
+    @keyframes fadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .error-icon {
+        font-size: 80px;
+        margin-bottom: 20px;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-20px); }
+    }
+
+    .error-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 16px;
+        animation: fadeIn 0.8s ease 0.2s both;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .error-message {
+        font-size: 18px;
+        color: var(--gray-600);
+        margin-bottom: 40px;
+        line-height: 1.6;
+        animation: fadeIn 0.8s ease 0.4s both;
+    }
+
+    .error-actions {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-bottom: 50px;
+        animation: fadeIn 0.8s ease 0.6s both;
+    }
+
+    .error-btn {
+        padding: 14px 32px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 16px;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .error-btn-primary {
+        background: var(--primary);
+        color: white;
+    }
+
+    .error-btn-primary:hover {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .error-btn-secondary {
+        background: var(--gray-100);
+        color: var(--gray-700);
+    }
+
+    .error-btn-secondary:hover {
+        background: var(--gray-200);
+        transform: translateY(-2px);
+    }
+
+    .error-search {
+        max-width: 500px;
+        margin: 0 auto 40px;
+        animation: fadeIn 0.8s ease 0.8s both;
+    }
+
+    .error-search-box {
+        position: relative;
+    }
+
+    .error-search-input {
+        width: 100%;
+        padding: 16px 50px 16px 20px;
+        border: 2px solid var(--gray-200);
+        border-radius: 12px;
+        font-size: 16px;
+        font-family: inherit;
+        transition: all 0.2s ease;
+    }
+
+    .error-search-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .error-search-btn {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 10px 18px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 18px;
+        transition: all 0.2s ease;
+    }
+
+    .error-search-btn:hover {
+        background: var(--primary-dark);
+    }
+
+    .error-suggestions {
+        background: white;
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: var(--shadow-md);
+        animation: fadeIn 0.8s ease 1s both;
+    }
+
+    .error-suggestions h3 {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .suggestion-list {
+        list-style: none;
+        text-align: left;
+    }
+
+    .suggestion-list li {
+        padding: 12px 0;
+        border-bottom: 1px solid var(--gray-100);
+    }
+
+    .suggestion-list li:last-child {
+        border-bottom: none;
+    }
+
+    .suggestion-list a {
+        text-decoration: none;
+        color: var(--primary);
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.2s ease;
+    }
+
+    .suggestion-list a:hover {
+        color: var(--primary-dark);
+        gap: 15px;
+    }
+
+    .suggestion-icon {
+        font-size: 20px;
+    }
+
+    @media (max-width: 768px) {
+        .error-code {
+            font-size: 80px;
+        }
+
+        .error-icon {
+            font-size: 60px;
+        }
+
+        .error-title {
+            font-size: 24px;
+        }
+
+        .error-message {
+            font-size: 16px;
+        }
+
+        .error-actions {
+            flex-direction: column;
+        }
+
+        .error-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .error-suggestions {
+            padding: 24px;
+        }
+    }
+</style>
+
+<div class="error-container">
+    <div class="error-icon">📚</div>
+    <div class="error-code">404</div>
+    <h1 class="error-title">Page Not Found</h1>
+    <p class="error-message">
+        Oops! The page you're looking for seems to have been checked out.<br>
+        Let's help you find what you need.
+    </p>
+
+    <div class="error-search">
+        <form action="{% url 'book_catalog' %}" method="GET">
+            <div class="error-search-box">
+                <input 
+                    type="text" 
+                    name="search" 
+                    class="error-search-input" 
+                    placeholder="Search for books..."
+                    autofocus
+                >
+                <button type="submit" class="error-search-btn">🔍</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="error-actions">
+        <a href="{% url 'book_catalog' %}" class="error-btn error-btn-primary">
+            <span>📖</span> Browse Catalog
+        </a>
+        {% if user.is_authenticated %}
+        <a href="{% url 'my_reservations' %}" class="error-btn error-btn-secondary">
+            <span>📋</span> My Reservations
+        </a>
+        <a href="{% url 'my_borrowings' %}" class="error-btn error-btn-secondary">
+            <span>📚</span> My Books
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="error-suggestions">
+        <h3>
+            <span>💡</span>
+            Quick Links
+        </h3>
+        <ul class="suggestion-list">
+            <li>
+                <a href="{% url 'book_catalog' %}">
+                    <span class="suggestion-icon">🏠</span>
+                    <span>Go to Book Catalog</span>
+                </a>
+            </li>
+            {% if user.is_authenticated %}
+            <li>
+                <a href="{% url 'my_reservations' %}">
+                    <span class="suggestion-icon">📋</span>
+                    <span>View My Reservations</span>
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'my_borrowings' %}">
+                    <span class="suggestion-icon">📚</span>
+                    <span>View My Borrowings</span>
+                </a>
+            </li>
+            {% else %}
+            <li>
+                <a href="{% url 'login' %}">
+                    <span class="suggestion-icon">🔐</span>
+                    <span>Login to Your Account</span>
+                </a>
+            </li>
+            {% endif %}
+            <li>
+                <a href="javascript:history.back()">
+                    <span class="suggestion-icon">↩️</span>
+                    <span>Go Back to Previous Page</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

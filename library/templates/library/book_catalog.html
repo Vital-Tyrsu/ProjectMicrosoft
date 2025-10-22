@@ -1,0 +1,366 @@
+{% extends 'library/base.html' %}
+
+{% block title %}Book Catalog - Library System{% endblock %}
+
+{% block content %}
+<!-- Stats Dashboard -->
+<div class="stats-dashboard">
+    <div class="stat-card stat-primary">
+        <div class="stat-icon">📚</div>
+        <div class="stat-content">
+            <div class="stat-value">{{ active_borrowings }}</div>
+            <div class="stat-label">Active Borrowing{{ active_borrowings|pluralize }}</div>
+        </div>
+        <a href="{% url 'my_borrowings' %}" class="stat-link">View →</a>
+    </div>
+
+    <div class="stat-card {% if overdue_borrowings > 0 %}stat-danger{% else %}stat-success{% endif %}">
+        <div class="stat-icon">{% if overdue_borrowings > 0 %}⚠️{% else %}✓{% endif %}</div>
+        <div class="stat-content">
+            <div class="stat-value">{{ overdue_borrowings }}</div>
+            <div class="stat-label">Overdue Book{{ overdue_borrowings|pluralize }}</div>
+        </div>
+        {% if overdue_borrowings > 0 %}
+        <a href="{% url 'my_borrowings' %}" class="stat-link">View →</a>
+        {% endif %}
+    </div>
+
+    <div class="stat-card stat-warning">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-content">
+            <div class="stat-value">{{ pending_reservations }}</div>
+            <div class="stat-label">Pending Reservation{{ pending_reservations|pluralize }}</div>
+        </div>
+        <a href="{% url 'my_reservations' %}" class="stat-link">View →</a>
+    </div>
+
+    <div class="stat-card stat-info">
+        <div class="stat-icon">✓</div>
+        <div class="stat-content">
+            <div class="stat-value">{{ assigned_reservations }}</div>
+            <div class="stat-label">Ready for Pickup</div>
+        </div>
+        {% if assigned_reservations > 0 %}
+        <a href="{% url 'my_reservations' %}" class="stat-link">Pickup →</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">
+            <span>📖</span>
+            Book Catalog
+        </h2>
+    </div>
+    
+    <form method="get" class="search-bar">
+        <input 
+            type="text" 
+            name="search" 
+            placeholder="🔍 Search by title, author, or ISBN..." 
+            value="{{ search_query }}"
+            autocomplete="off"
+        >
+        <select name="genre">
+            <option value="">All Genres</option>
+            {% for genre in genres %}
+            <option value="{{ genre }}" {% if genre == genre_filter %}selected{% endif %}>
+                {{ genre }}
+            </option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary">
+            Search
+        </button>
+        {% if search_query or genre_filter %}
+        <a href="{% url 'book_catalog' %}" class="btn btn-secondary">
+            Clear
+        </a>
+        {% endif %}
+    </form>
+    
+    {% if books %}
+    <p style="color: var(--gray-600); margin-bottom: 1.5rem; font-size: 0.875rem;">
+        Showing <strong>{{ books|length }}</strong> of <strong>{{ total_books }}</strong> book{{ total_books|pluralize }}
+        {% if current_page > 1 %}(Page {{ current_page }} of {{ total_pages }}){% endif %}
+    </p>
+    
+    <div class="book-grid" id="bookGrid">
+        {% for book in books %}
+        <div class="book-card">
+            <div class="book-cover">
+                {% if book.get_cover_url %}
+                <img 
+                    src="{{ book.get_cover_url }}" 
+                    alt="{{ book.title }} cover"
+                    loading="lazy"
+                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                >
+                <div class="book-cover-fallback" style="display: none;">
+                    📚
+                </div>
+                {% else %}
+                📚
+                {% endif %}
+            </div>
+            <div class="book-content">
+                <h3>{{ book.title }}</h3>
+                
+                <div class="book-meta">
+                    <div class="book-info">
+                        <strong>Author:</strong>
+                        <span>{{ book.author|default:"Unknown" }}</span>
+                    </div>
+                    {% if book.publication_year %}
+                    <div class="book-info">
+                        <strong>Year:</strong>
+                        <span>{{ book.publication_year }}</span>
+                    </div>
+                    {% endif %}
+                    {% if book.genre %}
+                    <div class="book-info">
+                        <strong>Genre:</strong>
+                        <span>{{ book.genre }}</span>
+                    </div>
+                    {% endif %}
+                    {% if book.isbn %}
+                    <div class="book-info">
+                        <strong>ISBN:</strong>
+                        <span>{{ book.isbn }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="availability">
+                    <div>
+                        {% if book.available_copies > 0 %}
+                        <span class="available">Available</span>
+                        {% else %}
+                        <span class="unavailable">Not Available</span>
+                        {% endif %}
+                    </div>
+                    <div style="font-size: 0.8125rem; color: var(--gray-600);">
+                        {{ book.available_copies }} of {{ book.total_copies }} cop{{ book.total_copies|pluralize:"y,ies" }}
+                    </div>
+                </div>
+                
+                <div style="margin-top: 1rem;">
+                    <a href="{% url 'create_reservation' book.id %}" class="btn btn-primary" style="width: 100%;">
+                        {% if book.available_copies > 0 %}
+                        Reserve Now
+                        {% else %}
+                        Join Waitlist
+                        {% endif %}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Load More Button / Infinite Scroll Trigger -->
+    {% if has_next %}
+    <div id="loadMoreContainer" style="margin-top: 2rem; text-align: center;">
+        <button id="loadMoreBtn" class="btn btn-primary" style="min-width: 200px;">
+            <span>Load More Books</span>
+        </button>
+        <p style="color: var(--gray-600); font-size: 0.875rem; margin-top: 0.75rem;">
+            Showing {{ books|length }} of {{ total_books }} books
+        </p>
+    </div>
+    <!-- Infinite scroll sentinel (invisible trigger) -->
+    <div id="scrollSentinel" style="height: 1px;"></div>
+    {% else %}
+    <div style="margin-top: 2rem; text-align: center; color: var(--gray-600); font-size: 0.875rem;">
+        <p>✓ All books loaded ({{ total_books }} total)</p>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">📚</div>
+        <h3>No books found</h3>
+        {% if search_query or genre_filter %}
+        <p>Try adjusting your search or filter criteria.</p>
+        <div style="margin-top: 1.5rem;">
+            <a href="{% url 'book_catalog' %}" class="btn btn-primary">
+                View All Books
+            </a>
+        </div>
+        {% else %}
+        <p>The catalog is currently empty.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Add loading state to reserve buttons
+document.addEventListener('DOMContentLoaded', function() {
+    const reserveButtons = document.querySelectorAll('a.btn-primary[href*="reserve"]');
+    
+    reserveButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            // Add loading state to the clicked button
+            this.classList.add('loading');
+            this.style.pointerEvents = 'none';
+            
+            // Show global loading overlay
+            showLoading('Creating reservation...');
+        });
+    });
+    
+    // Add loading state to search form
+    const searchForm = document.querySelector('.search-bar');
+    if (searchForm) {
+        searchForm.addEventListener('submit', function() {
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                setButtonLoading(submitBtn, true);
+            }
+        });
+    }
+    
+    // ============================================
+    // INFINITE SCROLL / LOAD MORE FUNCTIONALITY
+    // ============================================
+    
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    const loadMoreContainer = document.getElementById('loadMoreContainer');
+    const bookGrid = document.getElementById('bookGrid');
+    const scrollSentinel = document.getElementById('scrollSentinel');
+    
+    if (!loadMoreBtn || !bookGrid) return; // Exit if no pagination needed
+    
+    let currentPage = Number('{{ current_page }}');
+    const totalPages = Number('{{ total_pages }}');
+    let isLoading = false;
+    
+    // Get current search/filter params
+    const searchQuery = '{{ search_query }}';
+    const genreFilter = '{{ genre_filter }}';
+    
+    // Build URL with current filters
+    function buildUrl(page) {
+        let url = '?page=' + page;
+        if (searchQuery) url += '&search=' + encodeURIComponent(searchQuery);
+        if (genreFilter) url += '&genre=' + encodeURIComponent(genreFilter);
+        return url;
+    }
+    
+    // Load more books function
+    async function loadMoreBooks() {
+        if (isLoading || currentPage >= totalPages) return;
+        
+        isLoading = true;
+        const nextPage = currentPage + 1;
+        
+        // Show loading state on button
+        loadMoreBtn.classList.add('loading');
+        loadMoreBtn.disabled = true;
+        
+        try {
+            const response = await fetch(buildUrl(nextPage), {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            
+            if (!response.ok) throw new Error('Failed to load more books');
+            
+            const html = await response.text();
+            
+            // Parse the HTML response
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Extract new book cards
+            const newBooks = doc.querySelectorAll('.book-card');
+            
+            if (newBooks.length > 0) {
+                // Append new books to grid with fade-in animation
+                newBooks.forEach((book, index) => {
+                    book.style.opacity = '0';
+                    book.style.transform = 'translateY(20px)';
+                    book.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                    
+                    bookGrid.appendChild(book);
+                    
+                    // Staggered fade-in
+                    setTimeout(() => {
+                        book.style.opacity = '1';
+                        book.style.transform = 'translateY(0)';
+                    }, index * 50);
+                });
+                
+                // Re-attach event listeners to new reserve buttons
+                attachReserveListeners();
+                
+                currentPage = nextPage;
+                
+                // Update or hide load more button
+                if (currentPage >= totalPages) {
+                    loadMoreContainer.innerHTML = `
+                        <p style="color: var(--gray-600); font-size: 0.875rem;">
+                            ✓ All books loaded ({{ total_books }} total)
+                        </p>
+                    `;
+                } else {
+                    loadMoreBtn.classList.remove('loading');
+                    loadMoreBtn.disabled = false;
+                    
+                    // Update count text
+                    const countText = loadMoreContainer.querySelector('p');
+                    const currentCount = bookGrid.querySelectorAll('.book-card').length;
+                    if (countText) {
+                        countText.textContent = `Showing ${currentCount} of {{ total_books }} books`;
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error loading more books:', error);
+            loadMoreBtn.textContent = 'Failed to load. Click to retry';
+            loadMoreBtn.classList.remove('loading');
+            loadMoreBtn.disabled = false;
+        }
+        
+        isLoading = false;
+    }
+    
+    // Attach reserve button listeners (for dynamically loaded buttons)
+    function attachReserveListeners() {
+        const newReserveButtons = document.querySelectorAll('a.btn-primary[href*="reserve"]');
+        newReserveButtons.forEach(btn => {
+            if (!btn.dataset.listenerAttached) {
+                btn.addEventListener('click', function(e) {
+                    this.classList.add('loading');
+                    this.style.pointerEvents = 'none';
+                    showLoading('Creating reservation...');
+                });
+                btn.dataset.listenerAttached = 'true';
+            }
+        });
+    }
+    
+    // Load More button click
+    loadMoreBtn.addEventListener('click', loadMoreBooks);
+    
+    // Infinite scroll with Intersection Observer
+    if (scrollSentinel && 'IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !isLoading && currentPage < totalPages) {
+                    loadMoreBooks();
+                }
+            });
+        }, {
+            rootMargin: '200px' // Trigger 200px before sentinel comes into view
+        });
+        
+        observer.observe(scrollSentinel);
+    }
+});
+</script>
+{% endblock %}
+

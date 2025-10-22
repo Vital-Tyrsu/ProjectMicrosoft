@@ -1,0 +1,564 @@
+{% extends 'library/base.html' %}
+{% load static %}
+
+{% block title %}Admin Dashboard - Library System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-dashboard {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+
+    .dashboard-header {
+        margin-bottom: 2rem;
+    }
+
+    .dashboard-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+
+    .dashboard-subtitle {
+        color: #242528;
+        font-size: 1rem;
+        font-weight: 500;
+    }
+
+    /* Stats Cards Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        border: 1px solid #e5e7eb;
+        transition: transform 0.2s, box-shadow 0.2s;
+        text-decoration: none;
+        display: block;
+        color: inherit;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 20px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+    }
+
+    .stat-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .stat-icon.books {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .stat-icon.borrowings {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .stat-icon.reservations {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .stat-icon.users {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+
+    .stat-icon.overdue {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+
+    .stat-icon.assigned {
+        background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #1f2937;
+        line-height: 1;
+    }
+
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin-top: 0.5rem;
+    }
+
+    .stat-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-top: 0.5rem;
+    }
+
+    .stat-badge.danger {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .stat-badge.warning {
+        background: #fef3c7;
+        color: #d97706;
+    }
+
+    .stat-badge.success {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+
+    /* Content Grid */
+    .content-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .content-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        border: 1px solid #e5e7eb;
+    }
+
+    .content-card h2 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .activity-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .activity-item {
+        padding: 1rem;
+        border-bottom: 1px solid #f3f4f6;
+        transition: background 0.2s;
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-item:hover {
+        background: #f9fafb;
+    }
+
+    .activity-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 0.5rem;
+    }
+
+    .activity-title {
+        font-weight: 600;
+        color: #1f2937;
+        font-size: 0.9rem;
+    }
+
+    .activity-user {
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+
+    .activity-time {
+        color: #9ca3af;
+        font-size: 0.75rem;
+        white-space: nowrap;
+    }
+
+    .activity-details {
+        color: #6b7280;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-left: 0.5rem;
+    }
+
+    .status-badge.pending {
+        background: #fef3c7;
+        color: #d97706;
+    }
+
+    .status-badge.assigned {
+        background: #dbeafe;
+        color: #2563eb;
+    }
+
+    .status-badge.active {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+
+    .status-badge.overdue {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: #9ca3af;
+    }
+
+    .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .quick-actions {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 1.5rem;
+    }
+
+    .quick-action-btn {
+        flex: 1;
+        min-width: 200px;
+        padding: 1rem 1.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .quick-action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+
+    .quick-action-btn.secondary {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .quick-action-btn.tertiary {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .low-stock-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .low-stock-item {
+        padding: 0.75rem;
+        border-bottom: 1px solid #f3f4f6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .low-stock-item:last-child {
+        border-bottom: none;
+    }
+
+    .low-stock-title {
+        font-weight: 600;
+        color: #1f2937;
+        font-size: 0.9rem;
+    }
+
+    .low-stock-count {
+        font-size: 0.875rem;
+        color: #dc2626;
+        font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .content-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .quick-actions {
+            flex-direction: column;
+        }
+
+        .quick-action-btn {
+            min-width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <div class="dashboard-header">
+        <h1>👨‍💼 Admin Dashboard</h1>
+        <p class="dashboard-subtitle">Welcome back! Here's what's happening in your library.</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <a href="{% url 'book_catalog' %}" class="stat-card">
+            <div class="stat-card-header">
+                <div>
+                    <div class="stat-value">{{ total_books }}</div>
+                    <div class="stat-label">Total Books</div>
+                    <div class="stat-badge success">{{ total_copies }} copies</div>
+                </div>
+                <div class="stat-icon books">📚</div>
+            </div>
+        </a>
+
+        <a href="{% url 'admin_borrowings' %}?filter=active" class="stat-card">
+            <div class="stat-card-header">
+                <div>
+                    <div class="stat-value">{{ active_borrowings }}</div>
+                    <div class="stat-label">Active Borrowings</div>
+                    {% if overdue_borrowings > 0 %}
+                        <div class="stat-badge danger">{{ overdue_borrowings }} overdue</div>
+                    {% else %}
+                        <div class="stat-badge success">All on time</div>
+                    {% endif %}
+                </div>
+                <div class="stat-icon borrowings">📖</div>
+            </div>
+        </a>
+
+        <a href="{% url 'admin_reservations' %}?status=pending" class="stat-card">
+            <div class="stat-card-header">
+                <div>
+                    <div class="stat-value">{{ pending_reservations }}</div>
+                    <div class="stat-label">Pending Reservations</div>
+                    {% if pending_reservations > 0 %}
+                        <div class="stat-badge warning">Needs assignment</div>
+                    {% else %}
+                        <div class="stat-badge success">All processed</div>
+                    {% endif %}
+                </div>
+                <div class="stat-icon reservations">🎫</div>
+            </div>
+        </a>
+
+        <a href="{% url 'admin_reservations' %}?status=assigned" class="stat-card">
+            <div class="stat-card-header">
+                <div>
+                    <div class="stat-value">{{ assigned_reservations }}</div>
+                    <div class="stat-label">Awaiting Pickup</div>
+                    {% if assigned_reservations > 0 %}
+                        <div class="stat-badge warning">Ready for pickup</div>
+                    {% else %}
+                        <div class="stat-badge success">None waiting</div>
+                    {% endif %}
+                </div>
+                <div class="stat-icon assigned">📦</div>
+            </div>
+        </a>
+
+        <a href="{% url 'admin_borrowings' %}?filter=overdue" class="stat-card">
+            <div class="stat-card-header">
+                <div>
+                    <div class="stat-value">{{ overdue_borrowings }}</div>
+                    <div class="stat-label">Overdue Items</div>
+                    {% if overdue_borrowings > 0 %}
+                        <div class="stat-badge danger">Action needed</div>
+                    {% else %}
+                        <div class="stat-badge success">✓ None</div>
+                    {% endif %}
+                </div>
+                <div class="stat-icon overdue">⚠️</div>
+            </div>
+        </a>
+
+        <a href="{% url 'admin_users' %}" class="stat-card">
+            <div class="stat-card-header">
+                <div>
+                    <div class="stat-value">{{ total_users }}</div>
+                    <div class="stat-label">Registered Students</div>
+                    <div class="stat-badge success">Active users</div>
+                </div>
+                <div class="stat-icon users">👥</div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <a href="{% url 'admin_data_management' %}" class="quick-action-btn">
+            📊 Data Management
+        </a>
+        <a href="{% url 'admin_reservations' %}" class="quick-action-btn secondary">
+            🎫 Manage Reservations
+        </a>
+        <a href="{% url 'admin_borrowings' %}" class="quick-action-btn tertiary">
+            📖 Manage Borrowings
+        </a>
+        <a href="/admin/library/book/" class="quick-action-btn tertiary">
+            📚 Manage Books
+        </a>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="content-grid">
+        <!-- Recent Reservations -->
+        <div class="content-card">
+            <h2>🎫 Recent Reservations</h2>
+            {% if recent_reservations %}
+                <ul class="activity-list">
+                    {% for reservation in recent_reservations %}
+                        <li class="activity-item">
+                            <div class="activity-header">
+                                <div>
+                                    <div class="activity-title">
+                                        {{ reservation.book.title }}
+                                        <span class="status-badge {{ reservation.status }}">
+                                            {{ reservation.get_status_display }}
+                                        </span>
+                                    </div>
+                                    <div class="activity-user">
+                                        👤 {{ reservation.user.username }}
+                                        {% if reservation.user.email %}
+                                            ({{ reservation.user.email }})
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="activity-time">
+                                    {{ reservation.reservation_date|timesince }} ago
+                                </div>
+                            </div>
+                            {% if reservation.copy %}
+                                <div class="activity-details">
+                                    📍 Location: {{ reservation.copy.location }}
+                                    {% if reservation.expiration_date %}
+                                        | ⏰ Expires: {{ reservation.expiration_date|date:"M d, Y" }}
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">📭</div>
+                    <p>No recent reservations</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Recent Borrowings -->
+        <div class="content-card">
+            <h2>📖 Recent Borrowings</h2>
+            {% if recent_borrowings %}
+                <ul class="activity-list">
+                    {% for borrowing in recent_borrowings %}
+                        <li class="activity-item">
+                            <div class="activity-header">
+                                <div>
+                                    <div class="activity-title">
+                                        {{ borrowing.copy.book.title }}
+                                        {% if borrowing.return_date %}
+                                            <span class="status-badge success">Returned</span>
+                                        {% elif borrowing.due_date < now %}
+                                            <span class="status-badge overdue">Overdue</span>
+                                        {% else %}
+                                            <span class="status-badge active">Active</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="activity-user">
+                                        👤 {{ borrowing.user.username }}
+                                        {% if borrowing.user.email %}
+                                            ({{ borrowing.user.email }})
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="activity-time">
+                                    {{ borrowing.borrow_date|timesince }} ago
+                                </div>
+                            </div>
+                            <div class="activity-details">
+                                📍 Location: {{ borrowing.copy.location }}
+                                | ⏰ Due: {{ borrowing.due_date|date:"M d, Y" }}
+                                {% if borrowing.return_date %}
+                                    | ✓ Returned: {{ borrowing.return_date|date:"M d, Y" }}
+                                {% endif %}
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">📭</div>
+                    <p>No recent borrowings</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Low Stock Alert -->
+        <div class="content-card">
+            <h2>⚠️ Low Stock Alert</h2>
+            {% if low_stock_books %}
+                <ul class="low-stock-list">
+                    {% for item in low_stock_books %}
+                        <li class="low-stock-item">
+                            <div class="low-stock-title">{{ item.book.title }}</div>
+                            <div class="low-stock-count">
+                                {{ item.available }}/{{ item.total }} available
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">✅</div>
+                    <p>All books are well stocked!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

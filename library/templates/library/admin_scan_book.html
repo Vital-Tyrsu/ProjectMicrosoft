@@ -1,0 +1,204 @@
+{% extends 'library/base.html' %}
+
+{% block title %}Barcode Scanner - Library System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .scanner-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 0 1.5rem;
+    }
+
+    .scanner-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+    }
+
+    .scanner-card h2 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-subtitle {
+        color: #6b7280;
+        margin-bottom: 2rem;
+    }
+
+    .coming-soon-banner {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 3rem 2rem;
+        text-align: center;
+        color: white;
+        margin-bottom: 2rem;
+    }
+
+    .coming-soon-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.1);
+            opacity: 0.8;
+        }
+    }
+
+    .coming-soon-banner h3 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        color: white;
+    }
+
+    .coming-soon-banner p {
+        font-size: 1.1rem;
+        opacity: 0.95;
+        margin-bottom: 0;
+        line-height: 1.6;
+    }
+
+    .alternative-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .action-card {
+        background: #f9fafb;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+
+    .action-card:hover {
+        transform: translateY(-4px);
+        border-color: #3b82f6;
+        box-shadow: 0 12px 24px rgba(59, 130, 246, 0.15);
+    }
+
+    .action-card-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .action-card h4 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+
+    .action-card p {
+        color: #6b7280;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s;
+        margin-top: 2rem;
+    }
+
+    .btn-back:hover {
+        background: #e5e7eb;
+        border-color: #9ca3af;
+        transform: translateX(-4px);
+    }
+
+    @media (max-width: 768px) {
+        .scanner-container {
+            margin: 1rem auto;
+            padding: 0 1rem;
+        }
+
+        .scanner-card {
+            padding: 1.5rem;
+        }
+
+        .coming-soon-banner {
+            padding: 2rem 1.5rem;
+        }
+
+        .coming-soon-icon {
+            font-size: 3rem;
+        }
+
+        .coming-soon-banner h3 {
+            font-size: 1.5rem;
+        }
+
+        .coming-soon-banner p {
+            font-size: 1rem;
+        }
+
+        .alternative-actions {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="scanner-container">
+    <div class="scanner-card">
+        <h2> Barcode Scanner</h2>
+        <p class="card-subtitle">Scan book barcodes to quickly add them to your library</p>
+
+        <div class="coming-soon-banner">
+            <div class="coming-soon-icon"></div>
+            <h3>Coming Soon!</h3>
+            <p>Barcode scanning feature is currently under development.<br>We're working to bring you the best experience possible.</p>
+        </div>
+
+        <div class="alternative-actions">
+            <a href="{% url 'admin_add_book_isbn' %}" class="action-card">
+                <div class="action-card-icon"></div>
+                <h4>ISBN Lookup</h4>
+                <p>Enter an ISBN to automatically fetch book details</p>
+            </a>
+
+            <a href="{% url 'admin_add_book_manual' %}" class="action-card">
+                <div class="action-card-icon"></div>
+                <h4>Manual Entry</h4>
+                <p>Add a book by filling out the form manually</p>
+            </a>
+        </div>
+
+        <a href="{% url 'admin_data_management' %}" class="btn-back">
+            <span></span>
+            <span>Back to Data Management</span>
+        </a>
+    </div>
+</div>
+{% endblock %}

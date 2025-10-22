@@ -1,0 +1,306 @@
+{% extends 'library/base.html' %}
+
+{% block title %}Data Management - Library System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .data-management-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1.5rem;
+    }
+
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-subtitle {
+        color: #6b7280;
+        font-size: 1rem;
+    }
+
+    /* Management Cards Grid */
+    .management-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .management-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border: 2px solid transparent;
+        transition: all 0.3s;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+
+    .management-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        border-color: #667eea;
+    }
+
+    .card-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .card-icon.csv {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .card-icon.manual {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .card-icon.isbn {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .card-icon.scanner {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+
+    .card-icon.copies {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+
+    .card-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.75rem;
+    }
+
+    .card-description {
+        color: #6b7280;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+
+    .card-badge {
+        display: inline-block;
+        padding: 0.375rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .badge-recommended {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .badge-fast {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .badge-easy {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .badge-advanced {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    /* Stats Section */
+    .stats-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 2rem;
+        color: white;
+        margin-bottom: 2rem;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 2rem;
+        margin-top: 1.5rem;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        opacity: 0.9;
+    }
+
+    /* Quick Links */
+    .quick-links {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+    }
+
+    .quick-link {
+        padding: 0.5rem 1rem;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        color: white;
+        text-decoration: none;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+    }
+
+    .quick-link:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .data-management-container {
+            padding: 0 1rem;
+        }
+
+        .page-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .management-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="data-management-container">
+    <!-- Back Button -->
+    <a href="{% url 'admin_dashboard' %}" class="back-link" style="display: inline-flex; align-items: center; gap: 0.5rem; color: #3b82f6; text-decoration: none; font-weight: 500; margin-bottom: 1.5rem; transition: all 0.2s;">
+        <span>←</span>
+        <span>Back to Dashboard</span>
+    </a>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1>📚 Data Management Center</h1>
+        <p class="page-subtitle">Import books, manage copies, and organize your library collection</p>
+    </div>
+
+    <!-- Current Statistics -->
+    <div class="stats-section">
+        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">Current Library Status</h2>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value">{{ total_books }}</div>
+                <div class="stat-label">Total Books</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ total_copies }}</div>
+                <div class="stat-label">Total Copies</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ books_with_copies }}</div>
+                <div class="stat-label">Books Available</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ books_without_copies }}</div>
+                <div class="stat-label">Awaiting Copies</div>
+            </div>
+        </div>
+        <div class="quick-links">
+            <a href="{% url 'book_catalog' %}" class="quick-link">View All Books →</a>
+            <a href="/admin/library/book/" class="quick-link">Django Admin →</a>
+        </div>
+    </div>
+
+    <!-- Management Options -->
+    <div class="management-grid">
+        <!-- CSV Import -->
+        <a href="{% url 'admin_import_csv' %}" class="management-card">
+            <div class="card-icon csv">📄</div>
+            <div class="card-title">CSV Import</div>
+            <div class="card-description">
+                Upload a CSV file to import multiple books at once. Perfect for bulk imports.
+            </div>
+            <span class="card-badge badge-recommended">Recommended</span>
+        </a>
+
+        <!-- Manual Add -->
+        <a href="{% url 'admin_add_book_manual' %}" class="management-card">
+            <div class="card-icon manual">✍️</div>
+            <div class="card-title">Manual Add</div>
+            <div class="card-description">
+                Add a single book manually with all details. Simple form-based entry.
+            </div>
+            <span class="card-badge badge-easy">Easy</span>
+        </a>
+
+        <!-- ISBN Lookup -->
+        <a href="{% url 'admin_add_book_isbn' %}" class="management-card">
+            <div class="card-icon isbn">🔍</div>
+            <div class="card-title">ISBN Lookup</div>
+            <div class="card-description">
+                Enter ISBN and auto-fetch book details from Google Books API. Fast and accurate.
+            </div>
+            <span class="card-badge badge-fast">Fastest</span>
+        </a>
+
+        <!-- Barcode Scanner -->
+        <a href="{% url 'admin_scan_book' %}" class="management-card">
+            <div class="card-icon scanner">📱</div>
+            <div class="card-title">Barcode Scanner</div>
+            <div class="card-description">
+                Use your device camera to scan ISBN barcodes. Mobile-friendly and instant.
+            </div>
+            <span class="card-badge badge-advanced">Advanced</span>
+        </a>
+
+        <!-- Manage Copies -->
+        <a href="{% url 'admin_manage_copies' %}" class="management-card">
+            <div class="card-icon copies">📦</div>
+            <div class="card-title">Manage Copies</div>
+            <div class="card-description">
+                Add, edit, or remove book copies. Bulk generate copies with locations.
+            </div>
+            <span class="card-badge badge-easy">Easy</span>
+        </a>
+    </div>
+</div>
+{% endblock %}

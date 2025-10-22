@@ -1,0 +1,502 @@
+{% extends 'library/base.html' %}
+{% load static %}
+
+{% block title %}Manage Reservations - Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-page {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+
+    .dashboard-subtitle {
+        color: #242528;
+        font-size: 1rem;
+        font-weight: 500;
+    }
+
+    .filter-bar {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        border: 1px solid #e5e7eb;
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-row {
+        display: flex;
+        gap: 1rem;
+        align-items: end;
+        flex-wrap: wrap;
+    }
+
+    .filter-group {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .filter-label {
+        display: block;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .filter-input, .filter-select {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        transition: border-color 0.2s;
+    }
+
+    .filter-input:focus, .filter-select:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .filter-btn {
+        padding: 0.75rem 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .filter-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+    }
+
+    .table-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+    }
+
+    .bulk-actions-bar {
+        padding: 1rem 1.5rem;
+        background: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .bulk-select-all {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .bulk-action-btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 0.875rem;
+        transition: transform 0.2s;
+    }
+
+    .bulk-action-btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .bulk-action-btn.success {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+
+    .bulk-action-btn.danger {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .reservations-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .reservations-table thead {
+        background: #f9fafb;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    .reservations-table th {
+        padding: 1rem 1.5rem;
+        text-align: left;
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .reservations-table td {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #f3f4f6;
+        font-size: 0.875rem;
+    }
+
+    .reservations-table tr:hover {
+        background: #f9fafb;
+    }
+
+    .reservations-table tr.clickable {
+        cursor: pointer;
+    }
+
+    .reservations-table tr.clickable:hover {
+        background: #eff6ff;
+    }
+
+    .reservations-table tr.selected {
+        background: #dbeafe !important;
+    }
+
+    .book-title {
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .user-info {
+        color: #6b7280;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-badge.pending {
+        background: #fef3c7;
+        color: #d97706;
+    }
+
+    .status-badge.assigned {
+        background: #dbeafe;
+        color: #2563eb;
+    }
+
+    .status-badge.picked_up {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+
+    .status-badge.expired {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .status-badge.canceled {
+        background: #f3f4f6;
+        color: #6b7280;
+    }
+
+    .location-info {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #9ca3af;
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .pagination {
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        background: #f9fafb;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .pagination a, .pagination span {
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        text-decoration: none;
+        color: #374151;
+        font-weight: 500;
+    }
+
+    .pagination a:hover {
+        background: #e5e7eb;
+    }
+
+    .pagination .current {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+        .filter-row {
+            flex-direction: column;
+        }
+
+        .filter-group {
+            width: 100%;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .reservations-table {
+            min-width: 800px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    <div class="page-header">
+        <h1>🎫 Manage Reservations</h1>
+        <p class="dashboard-subtitle">View and manage all book reservations</p>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+        <form method="GET" action="">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label class="filter-label">Status</label>
+                    <select name="status" class="filter-select">
+                        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Status</option>
+                        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="assigned" {% if status_filter == 'assigned' %}selected{% endif %}>Assigned</option>
+                        <option value="picked_up" {% if status_filter == 'picked_up' %}selected{% endif %}>Picked Up</option>
+                        <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>Expired</option>
+                        <option value="canceled" {% if status_filter == 'canceled' %}selected{% endif %}>Canceled</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Search</label>
+                    <input type="text" name="search" class="filter-input" 
+                           placeholder="Search by book, user, or email..." 
+                           value="{{ search_query }}">
+                </div>
+
+                <div>
+                    <button type="submit" class="filter-btn">🔍 Filter</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+        <form method="POST" action="" id="bulkForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" id="bulkAction">
+
+            <!-- Bulk Actions Bar -->
+            <div class="bulk-actions-bar">
+                <label class="bulk-select-all">
+                    <input type="checkbox" id="selectAll">
+                    Select All
+                </label>
+                <button type="button" class="bulk-action-btn success" 
+                        onclick="submitBulkAction('mark_picked_up')">
+                    ✓ Mark as Picked Up
+                </button>
+                <button type="button" class="bulk-action-btn danger" 
+                        onclick="submitBulkAction('cancel')">
+                    ✕ Cancel Selected
+                </button>
+                <span style="margin-left: auto; color: #6b7280; font-size: 0.875rem;">
+                    Total: {{ total_count }} reservation(s)
+                </span>
+            </div>
+
+            {% if reservations %}
+                <table class="reservations-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"></th>
+                            <th>Book</th>
+                            <th>Student</th>
+                            <th>Status</th>
+                            <th>Location</th>
+                            <th>Reserved</th>
+                            <th>Expires</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reservation in reservations %}
+                            {% if reservation.status in 'pending,assigned' %}
+                            <tr class="clickable" onclick="toggleRow(this, '{{ reservation.id }}')" data-reservation-id="{{ reservation.id }}">
+                            {% else %}
+                            <tr data-reservation-id="{{ reservation.id }}">
+                            {% endif %}
+                                <td onclick="event.stopPropagation();">
+                                    {% if reservation.status in 'pending,assigned' %}
+                                        <input type="checkbox" name="reservation_ids" 
+                                               value="{{ reservation.id }}" class="reservation-checkbox"
+                                               id="checkbox-{{ reservation.id }}">
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="book-title">{{ reservation.book.title }}</div>
+                                    <div class="user-info" style="font-size: 0.75rem;">
+                                        by {{ reservation.book.author }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="book-title">{{ reservation.user.username }}</div>
+                                    {% if reservation.user.email %}
+                                        <div class="user-info">{{ reservation.user.email }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="status-badge {{ reservation.status }}">
+                                        {{ reservation.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if reservation.copy %}
+                                        <span class="location-info">
+                                            📍 {{ reservation.copy.location }}
+                                        </span>
+                                    {% else %}
+                                        <span style="color: #9ca3af;">Not assigned</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span style="color: #6b7280;">
+                                        {{ reservation.reservation_date|date:"M d, Y" }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if reservation.expiration_date %}
+                                        <span style="color: #6b7280;">
+                                            {{ reservation.expiration_date|date:"M d, Y" }}
+                                        </span>
+                                    {% else %}
+                                        <span style="color: #9ca3af;">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                {% if reservations.has_other_pages %}
+                    <div class="pagination">
+                        {% if reservations.has_previous %}
+                            <a href="?page=1&status={{ status_filter }}&search={{ search_query }}">« First</a>
+                            <a href="?page={{ reservations.previous_page_number }}&status={{ status_filter }}&search={{ search_query }}">‹ Prev</a>
+                        {% endif %}
+
+                        <span class="current">Page {{ reservations.number }} of {{ reservations.paginator.num_pages }}</span>
+
+                        {% if reservations.has_next %}
+                            <a href="?page={{ reservations.next_page_number }}&status={{ status_filter }}&search={{ search_query }}">Next ›</a>
+                            <a href="?page={{ reservations.paginator.num_pages }}&status={{ status_filter }}&search={{ search_query }}">Last »</a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">📭</div>
+                    <h3>No reservations found</h3>
+                    <p>Try adjusting your filters or search query.</p>
+                </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<script>
+// Toggle row selection when clicking anywhere on the row
+function toggleRow(row, reservationId) {
+    const checkbox = document.getElementById('checkbox-' + reservationId);
+    if (checkbox) {
+        checkbox.checked = !checkbox.checked;
+        // Toggle selected class
+        if (checkbox.checked) {
+            row.classList.add('selected');
+        } else {
+            row.classList.remove('selected');
+        }
+    }
+}
+
+// Select all checkbox functionality
+document.getElementById('selectAll').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.reservation-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = this.checked;
+        // Update row visual state
+        const row = checkbox.closest('tr');
+        if (checkbox.checked) {
+            row.classList.add('selected');
+        } else {
+            row.classList.remove('selected');
+        }
+    });
+});
+
+// Submit bulk action
+function submitBulkAction(action) {
+    const checked = document.querySelectorAll('.reservation-checkbox:checked');
+    
+    if (checked.length === 0) {
+        alert('Please select at least one reservation');
+        return;
+    }
+    
+    let confirmMessage = '';
+    if (action === 'mark_picked_up') {
+        confirmMessage = `Mark ${checked.length} reservation(s) as picked up? This will create borrowing records.`;
+    } else if (action === 'cancel') {
+        confirmMessage = `Cancel ${checked.length} reservation(s)?`;
+    }
+    
+    if (confirm(confirmMessage)) {
+        document.getElementById('bulkAction').value = action;
+        document.getElementById('bulkForm').submit();
+    }
+}
+</script>
+{% endblock %}

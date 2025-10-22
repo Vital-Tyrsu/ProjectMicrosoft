@@ -1,0 +1,524 @@
+{% extends 'library/base.html' %}
+
+{% block title %}ISBN Lookup - Library System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .isbn-container {
+        max-width: 900px;
+        margin: 2rem auto;
+        padding: 0 1.5rem;
+    }
+
+    .isbn-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+        margin-bottom: 2rem;
+    }
+
+    .isbn-card h2 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-subtitle {
+        color: #6b7280;
+        margin-bottom: 2rem;
+    }
+
+    /* ISBN Search Section */
+    .isbn-search {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .isbn-input {
+        flex: 1;
+        padding: 1rem 1.5rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 1.125rem;
+        transition: all 0.2s;
+        font-family: 'Courier New', monospace;
+    }
+
+    .isbn-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .btn-lookup {
+        padding: 1rem 2rem;
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+
+    .btn-lookup:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(79, 172, 254, 0.3);
+    }
+
+    .btn-lookup:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* Loading Spinner */
+    .loading {
+        display: none;
+        text-align: center;
+        padding: 3rem;
+    }
+
+    .loading.show {
+        display: block;
+    }
+
+    .spinner {
+        border: 4px solid #f3f4f6;
+        border-top: 4px solid #4facfe;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+        color: #6b7280;
+        font-size: 1rem;
+    }
+
+    /* Book Preview */
+    .book-preview {
+        display: none;
+    }
+
+    .book-preview.show {
+        display: block;
+    }
+
+    .preview-grid {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .preview-cover {
+        text-align: center;
+    }
+
+    .preview-cover img {
+        max-width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .no-cover {
+        width: 200px;
+        height: 300px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4rem;
+        color: white;
+    }
+
+    .preview-details {
+        flex: 1;
+    }
+
+    .preview-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+
+    .preview-author {
+        font-size: 1.125rem;
+        color: #6b7280;
+        margin-bottom: 1rem;
+    }
+
+    .preview-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: #f3f4f6;
+        border-radius: 6px;
+        font-size: 0.875rem;
+    }
+
+    .preview-description {
+        color: #374151;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+    }
+
+    .source-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.375rem 0.75rem;
+        background: #dbeafe;
+        color: #1e40af;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    /* Error Message */
+    .error-message {
+        display: none;
+        padding: 1rem 1.5rem;
+        background: #fee2e2;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        color: #991b1b;
+        margin-bottom: 2rem;
+    }
+
+    .error-message.show {
+        display: block;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        padding-top: 2rem;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .btn-add {
+        flex: 1;
+        padding: 0.875rem 2rem;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-add:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-search-again {
+        padding: 0.875rem 2rem;
+        background: white;
+        color: #6b7280;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-search-again:hover {
+        border-color: #4facfe;
+        color: #4facfe;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .isbn-container {
+            padding: 0 1rem;
+        }
+
+        .isbn-card {
+            padding: 1.5rem;
+        }
+
+        .isbn-card h2 {
+            font-size: 1.5rem;
+        }
+
+        .isbn-search {
+            flex-direction: column;
+        }
+
+        .btn-lookup {
+            width: 100%;
+        }
+
+        .preview-grid {
+            grid-template-columns: 1fr;
+            text-align: center;
+        }
+
+        .preview-cover {
+            margin: 0 auto;
+        }
+
+        .preview-meta {
+            justify-content: center;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="isbn-container">
+    <!-- Back Button -->
+    <a href="{% url 'admin_data_management' %}" class="back-link" style="display: inline-flex; align-items: center; gap: 0.5rem; color: #3b82f6; text-decoration: none; font-weight: 500; margin-bottom: 1.5rem; transition: all 0.2s;">
+        <span>←</span>
+        <span>Back to Data Management</span>
+    </a>
+
+    <!-- ISBN Lookup Card -->
+    <div class="isbn-card">
+        <h2>🔍 ISBN Lookup</h2>
+        <p class="card-subtitle">Enter an ISBN to automatically fetch book details from Google Books</p>
+
+        <!-- ISBN Search -->
+        <div class="isbn-search">
+            <input 
+                type="text" 
+                id="isbn-input" 
+                class="isbn-input" 
+                placeholder="Enter ISBN (e.g., 9780590353427)"
+                maxlength="13"
+                pattern="[0-9]{10,13}"
+            >
+            <button id="lookup-btn" class="btn-lookup">
+                🔍 Lookup
+            </button>
+        </div>
+
+        <!-- Error Message -->
+        <div class="error-message" id="error-message"></div>
+
+        <!-- Loading State -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div class="loading-text">Searching Google Books...</div>
+        </div>
+
+        <!-- Book Preview -->
+        <div class="book-preview" id="book-preview">
+            <div class="preview-grid">
+                <div class="preview-cover" id="preview-cover">
+                    <!-- Cover will be inserted here -->
+                </div>
+                <div class="preview-details">
+                    <h3 class="preview-title" id="preview-title"></h3>
+                    <div class="preview-author" id="preview-author"></div>
+                    <div class="preview-meta" id="preview-meta"></div>
+                    <div class="preview-description" id="preview-description"></div>
+                    <span class="source-badge">
+                        📚 Powered by Google Books API
+                    </span>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <form method="POST" id="add-form">
+                {% csrf_token %}
+                <input type="hidden" name="book_data" id="book-data">
+                <div class="action-buttons">
+                    <button type="submit" class="btn-add">
+                        ✓ Add to Library
+                    </button>
+                    <button type="button" class="btn-search-again" id="search-again-btn">
+                        🔍 Search Another
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const isbnInput = document.getElementById('isbn-input');
+    const lookupBtn = document.getElementById('lookup-btn');
+    const loading = document.getElementById('loading');
+    const errorMessage = document.getElementById('error-message');
+    const bookPreview = document.getElementById('book-preview');
+    const searchAgainBtn = document.getElementById('search-again-btn');
+    const bookDataInput = document.getElementById('book-data');
+
+    let currentBookData = null;
+
+    // ISBN input - only allow digits
+    isbnInput.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/\D/g, '');
+    });
+
+    // Enter key to lookup
+    isbnInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            lookupBtn.click();
+        }
+    });
+
+    // Lookup button
+    lookupBtn.addEventListener('click', () => {
+        const isbn = isbnInput.value.trim();
+        
+        if (!isbn) {
+            showError('Please enter an ISBN');
+            return;
+        }
+
+        if (isbn.length < 10 || isbn.length > 13) {
+            showError('ISBN must be 10 or 13 digits');
+            return;
+        }
+
+        lookupBook(isbn);
+    });
+
+    // Search again button
+    searchAgainBtn.addEventListener('click', () => {
+        resetForm();
+    });
+
+    function lookupBook(isbn) {
+        // Hide previous results
+        hideError();
+        bookPreview.classList.remove('show');
+        
+        // Show loading
+        loading.classList.add('show');
+        lookupBtn.disabled = true;
+
+        // Fetch from Google Books API
+        fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`)
+            .then(response => response.json())
+            .then(data => {
+                loading.classList.remove('show');
+                lookupBtn.disabled = false;
+
+                if (!data.items || data.items.length === 0) {
+                    showError('No book found with this ISBN. Please check the ISBN and try again.');
+                    return;
+                }
+
+                displayBook(data.items[0]);
+            })
+            .catch(error => {
+                loading.classList.remove('show');
+                lookupBtn.disabled = false;
+                showError('Error fetching book data. Please check your internet connection and try again.');
+                console.error('Error:', error);
+            });
+    }
+
+    function displayBook(item) {
+        const volumeInfo = item.volumeInfo;
+        
+        // Extract book data
+        currentBookData = {
+            title: volumeInfo.title || 'Unknown Title',
+            author: (volumeInfo.authors && volumeInfo.authors.join(', ')) || 'Unknown Author',
+            isbn: isbnInput.value.trim(),
+            genre: (volumeInfo.categories && volumeInfo.categories[0]) || '',
+            publication_year: volumeInfo.publishedDate ? new Date(volumeInfo.publishedDate).getFullYear() : '',
+            publisher: volumeInfo.publisher || '',
+            description: volumeInfo.description || 'No description available',
+            cover_url: volumeInfo.imageLinks?.thumbnail?.replace('http:', 'https:') || ''
+        };
+
+        // Store as JSON
+        bookDataInput.value = JSON.stringify(currentBookData);
+
+        // Display title
+        document.getElementById('preview-title').textContent = currentBookData.title;
+
+        // Display author
+        document.getElementById('preview-author').textContent = `by ${currentBookData.author}`;
+
+        // Display cover
+        const coverDiv = document.getElementById('preview-cover');
+        if (currentBookData.cover_url) {
+            coverDiv.innerHTML = `<img src="${currentBookData.cover_url}" alt="Book cover">`;
+        } else {
+            coverDiv.innerHTML = '<div class="no-cover">📚</div>';
+        }
+
+        // Display metadata
+        const metaDiv = document.getElementById('preview-meta');
+        let metaHTML = '';
+        
+        if (currentBookData.isbn) {
+            metaHTML += `<div class="meta-item">📖 ISBN: ${currentBookData.isbn}</div>`;
+        }
+        if (currentBookData.genre) {
+            metaHTML += `<div class="meta-item">🏷️ ${currentBookData.genre}</div>`;
+        }
+        if (currentBookData.publication_year) {
+            metaHTML += `<div class="meta-item">📅 ${currentBookData.publication_year}</div>`;
+        }
+        if (currentBookData.publisher) {
+            metaHTML += `<div class="meta-item">🏢 ${currentBookData.publisher}</div>`;
+        }
+        
+        metaDiv.innerHTML = metaHTML;
+
+        // Display description
+        document.getElementById('preview-description').textContent = currentBookData.description;
+
+        // Show preview
+        bookPreview.classList.add('show');
+    }
+
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.classList.add('show');
+    }
+
+    function hideError() {
+        errorMessage.classList.remove('show');
+    }
+
+    function resetForm() {
+        isbnInput.value = '';
+        bookPreview.classList.remove('show');
+        hideError();
+        isbnInput.focus();
+    }
+
+    // Focus ISBN input on load
+    isbnInput.focus();
+</script>
+{% endblock %}

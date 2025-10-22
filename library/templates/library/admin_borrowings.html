@@ -1,0 +1,464 @@
+{% extends 'library/base.html' %}
+{% load static %}
+
+{% block title %}Manage Borrowings - Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-page {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+
+    .dashboard-subtitle {
+        color: #242528;
+        font-size: 1rem;
+        font-weight: 500;
+    }
+
+    .filter-bar {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        border: 1px solid #e5e7eb;
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-row {
+        display: flex;
+        gap: 1rem;
+        align-items: end;
+        flex-wrap: wrap;
+    }
+
+    .filter-group {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .filter-label {
+        display: block;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .filter-input, .filter-select {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        transition: border-color 0.2s;
+    }
+
+    .filter-input:focus, .filter-select:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .filter-btn {
+        padding: 0.75rem 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .filter-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+    }
+
+    .table-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+    }
+
+    .info-bar {
+        padding: 1rem 1.5rem;
+        background: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .borrowings-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .borrowings-table thead {
+        background: #f9fafb;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    .borrowings-table th {
+        padding: 1rem 1.5rem;
+        text-align: left;
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .borrowings-table td {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #f3f4f6;
+        font-size: 0.875rem;
+    }
+
+    .borrowings-table tr:hover {
+        background: #f9fafb;
+    }
+
+    .borrowings-table tr.overdue {
+        background: #fef2f2;
+    }
+
+    .borrowings-table tr.overdue:hover {
+        background: #fee2e2;
+    }
+
+    .book-title {
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .user-info {
+        color: #6b7280;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-badge.active {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+
+    .status-badge.overdue {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .status-badge.returned {
+        background: #e0e7ff;
+        color: #4f46e5;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .action-btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 0.75rem;
+        transition: transform 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .action-btn.success {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+
+    .action-btn.warning {
+        background: #fef3c7;
+        color: #d97706;
+    }
+
+    .location-info {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #9ca3af;
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .pagination {
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        background: #f9fafb;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .pagination a, .pagination span {
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        text-decoration: none;
+        color: #374151;
+        font-weight: 500;
+    }
+
+    .pagination a:hover {
+        background: #e5e7eb;
+    }
+
+    .pagination .current {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+        .filter-row {
+            flex-direction: column;
+        }
+
+        .filter-group {
+            width: 100%;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .borrowings-table {
+            min-width: 1000px;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+    <div class="page-header">
+        <h1>📖 Manage Borrowings</h1>
+        <p class="dashboard-subtitle">View and manage all book borrowings</p>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+        <form method="GET" action="">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label class="filter-label">Filter</label>
+                    <select name="filter" class="filter-select">
+                        <option value="active_all" {% if filter_type == 'active_all' %}selected{% endif %}>All Unreturned Books</option>
+                        <option value="active" {% if filter_type == 'active' %}selected{% endif %}>Active Only</option>
+                        <option value="return_pending" {% if filter_type == 'return_pending' %}selected{% endif %}>⏳ Return Requested Only</option>
+                        <option value="overdue" {% if filter_type == 'overdue' %}selected{% endif %}>Overdue</option>
+                        <option value="returned" {% if filter_type == 'returned' %}selected{% endif %}>Returned</option>
+                        <option value="all" {% if filter_type == 'all' %}selected{% endif %}>All Borrowings</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Search</label>
+                    <input type="text" name="search" class="filter-input" 
+                           placeholder="Search by book, user, or email..." 
+                           value="{{ search_query }}">
+                </div>
+
+                <div>
+                    <button type="submit" class="filter-btn">🔍 Filter</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+        <!-- Info Bar -->
+        <div class="info-bar">
+            <span style="font-weight: 600; color: #374151;">
+                📚 Borrowing Records
+            </span>
+            <span style="color: #6b7280; font-size: 0.875rem;">
+                Total: {{ total_count }} borrowing(s)
+            </span>
+        </div>
+
+        {% if borrowings %}
+            <table class="borrowings-table">
+                <thead>
+                    <tr>
+                        <th>Book</th>
+                        <th>Student</th>
+                        <th>Location</th>
+                        <th>Borrowed</th>
+                        <th>Due Date</th>
+                        <th>Returned</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for borrowing in borrowings %}
+                        <tr {% if not borrowing.return_date and borrowing.due_date < now %}class="overdue"{% endif %}>
+                            <td>
+                                <div class="book-title">{{ borrowing.copy.book.title }}</div>
+                                <div class="user-info" style="font-size: 0.75rem;">
+                                    by {{ borrowing.copy.book.author }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="book-title">{{ borrowing.user.username }}</div>
+                                {% if borrowing.user.email %}
+                                    <div class="user-info">{{ borrowing.user.email }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="location-info">
+                                    📍 {{ borrowing.copy.location }}
+                                </span>
+                            </td>
+                            <td>
+                                <span style="color: #6b7280;">
+                                    {{ borrowing.borrow_date|date:"M d, Y" }}
+                                </span>
+                            </td>
+                            <td>
+                                <span style="color: #6b7280;">
+                                    {{ borrowing.due_date|date:"M d, Y" }}
+                                </span>
+                                {% if not borrowing.return_date and borrowing.due_date < now %}
+                                    <br>
+                                    <span style="color: #dc2626; font-size: 0.75rem; font-weight: 600;">
+                                        ⚠️ {{ borrowing.due_date|timesince }} overdue
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if borrowing.return_date %}
+                                    <span style="color: #16a34a;">
+                                        {{ borrowing.return_date|date:"M d, Y" }}
+                                    </span>
+                                {% else %}
+                                    <span style="color: #9ca3af;">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if borrowing.return_date %}
+                                    <span class="status-badge returned">Returned</span>
+                                {% elif borrowing.status == 'return_pending' %}
+                                    <span class="status-badge" style="background: #fef3c7; color: #92400e;">⏳ Return Requested</span>
+                                {% elif borrowing.due_date < now %}
+                                    <span class="status-badge overdue">Overdue</span>
+                                {% else %}
+                                    <span class="status-badge active">Active</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not borrowing.return_date %}
+                                    {% if borrowing.status == 'return_pending' %}
+                                        <div class="action-buttons">
+                                            <form method="POST" style="display: inline;">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="borrowing_id" value="{{ borrowing.id }}">
+                                                <input type="hidden" name="action" value="process_return">
+                                                <button type="submit" class="action-btn success" title="Verify book is returned and shelve at {{ borrowing.copy.location }}">
+                                                    ✓ Confirm & Shelve
+                                                </button>
+                                            </form>
+                                        </div>
+                                    {% else %}
+                                        <div class="action-buttons">
+                                            <form method="POST" style="display: inline;">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="borrowing_id" value="{{ borrowing.id }}">
+                                                <input type="hidden" name="action" value="process_return">
+                                                <button type="submit" class="action-btn success" title="Book returned and back on shelf at {{ borrowing.copy.location }}">
+                                                    ✓ Return & Shelve
+                                                </button>
+                                            </form>
+                                            <form method="POST" style="display: inline;">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="borrowing_id" value="{{ borrowing.id }}">
+                                                <input type="hidden" name="action" value="extend_due_date">
+                                                <button type="submit" class="action-btn warning">
+                                                    ⏰ Extend +7d
+                                                </button>
+                                            </form>
+                                        </div>
+                                    {% endif %}
+                                {% else %}
+                                    <span style="color: #059669; font-size: 0.875rem; font-weight: 600;">✓ Shelved</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            {% if borrowings.has_other_pages %}
+                <div class="pagination">
+                    {% if borrowings.has_previous %}
+                        <a href="?page=1&filter={{ filter_type }}&search={{ search_query }}">« First</a>
+                        <a href="?page={{ borrowings.previous_page_number }}&filter={{ filter_type }}&search={{ search_query }}">‹ Prev</a>
+                    {% endif %}
+
+                    <span class="current">Page {{ borrowings.number }} of {{ borrowings.paginator.num_pages }}</span>
+
+                    {% if borrowings.has_next %}
+                        <a href="?page={{ borrowings.next_page_number }}&filter={{ filter_type }}&search={{ search_query }}">Next ›</a>
+                        <a href="?page={{ borrowings.paginator.num_pages }}&filter={{ filter_type }}&search={{ search_query }}">Last »</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">📭</div>
+                <h3>No borrowings found</h3>
+                <p>Try adjusting your filters or search query.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

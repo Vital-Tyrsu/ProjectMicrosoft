@@ -1,0 +1,645 @@
+{% extends 'library/base.html' %}
+
+{% block title %}{{ viewed_user.username }} - User Details{% endblock %}
+
+{% block extra_css %}
+<style>
+    .user-detail-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1.5rem;
+    }
+
+    /* Back Button */
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #3b82f6;
+        text-decoration: none;
+        font-weight: 500;
+        margin-bottom: 1.5rem;
+        transition: all 0.2s;
+    }
+
+    .back-link:hover {
+        gap: 0.75rem;
+        color: #2563eb;
+    }
+
+    /* User Header Card */
+    .user-header-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+        margin-bottom: 2rem;
+    }
+
+    .user-header-content {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .user-avatar-large {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 2rem;
+        flex-shrink: 0;
+    }
+
+    .user-header-info {
+        flex: 1;
+    }
+
+    .user-name-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+
+    .user-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        color: #6b7280;
+        font-size: 0.95rem;
+    }
+
+    .user-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .role-badge-large {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .role-badge-large.admin {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .role-badge-large.student {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .role-badge-large.teacher {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    /* Role Change Dropdown */
+    .role-change-form {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .role-select {
+        padding: 0.6rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: #1f2937;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+        min-width: 150px;
+    }
+
+    .role-select:hover {
+        border-color: #667eea;
+    }
+
+    .role-select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    /* Role Change Button */
+    .btn-role-change {
+        padding: 0.6rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .btn-role-change:hover {
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-role-change:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .stat-card-small {
+        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+        border-radius: 8px;
+        padding: 1.25rem;
+        border: 1px solid #e5e7eb;
+    }
+
+    .stat-label-small {
+        color: #6b7280;
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-value-small {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .stat-value-small.danger {
+        color: #dc2626;
+    }
+
+    .stat-value-small.success {
+        color: #059669;
+    }
+
+    /* Content Sections */
+    .content-sections {
+        display: grid;
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .section-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+    }
+
+    .section-header {
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1f2937;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .toggle-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.5rem;
+        color: #6b7280;
+        transition: transform 0.2s;
+        padding: 0.25rem;
+    }
+
+    .toggle-btn.expanded {
+        transform: rotate(180deg);
+    }
+
+    .section-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+    }
+
+    .section-content.expanded {
+        max-height: 2000px;
+    }
+
+    /* Table Styles */
+    .detail-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .detail-table tbody tr {
+        border-bottom: 1px solid #f3f4f6;
+        transition: background 0.2s;
+    }
+
+    .detail-table tbody tr:hover {
+        background: #f9fafb;
+    }
+
+    .detail-table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .detail-table td {
+        padding: 1rem 1.5rem;
+        color: #4b5563;
+        font-size: 0.95rem;
+    }
+
+    .book-title {
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .book-author {
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.375rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-badge.active {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .status-badge.returned {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .status-badge.overdue {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .status-badge.pending {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-badge.assigned {
+        background: #e0e7ff;
+        color: #3730a3;
+    }
+
+    .status-badge.fulfilled, .status-badge.cancelled {
+        background: #f3f4f6;
+        color: #6b7280;
+    }
+
+    .empty-section {
+        padding: 3rem 1.5rem;
+        text-align: center;
+        color: #9ca3af;
+    }
+
+    .empty-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .user-detail-container {
+            padding: 0 1rem;
+        }
+
+        .user-header-content {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .user-meta {
+            justify-content: center;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .user-name-title {
+            font-size: 1.5rem;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .detail-table {
+            font-size: 0.875rem;
+        }
+
+        .detail-table td {
+            padding: 0.75rem 1rem;
+        }
+
+        /* Mobile Role Change Form */
+        .role-change-form {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.75rem;
+        }
+
+        .role-change-form label {
+            text-align: center;
+        }
+
+        .role-select {
+            width: 100%;
+        }
+
+        .btn-role-change {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="user-detail-container">
+    <!-- Back Button -->
+    <a href="{% url 'admin_users' %}" class="back-link">
+        <span>←</span>
+        <span>Back to Users</span>
+    </a>
+
+    <!-- User Header Card -->
+    <div class="user-header-card">
+        <div class="user-header-content">
+            <div class="user-avatar-large">
+                {{ viewed_user.username|slice:":1"|upper }}
+            </div>
+            <div class="user-header-info">
+                <h1 class="user-name-title">
+                    {% if viewed_user.first_name or viewed_user.last_name %}
+                        {{ viewed_user.first_name }} {{ viewed_user.last_name }}
+                    {% else %}
+                        {{ viewed_user.username }}
+                    {% endif %}
+                </h1>
+                <div class="user-meta">
+                    <div class="user-meta-item">
+                        <span>👤</span>
+                        <span>{{ viewed_user.username }}</span>
+                    </div>
+                    <div class="user-meta-item">
+                        <span>📧</span>
+                        <span>{{ viewed_user.email|default:"No email" }}</span>
+                    </div>
+                    <div class="user-meta-item">
+                        <span>📅</span>
+                        <span>Joined {{ viewed_user.date_joined|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="user-meta-item">
+                        {% if viewed_user.role == 'admin' %}
+                            <span class="role-badge-large admin">👨‍💼 Admin</span>
+                        {% elif viewed_user.role == 'teacher' %}
+                            <span class="role-badge-large teacher">👨‍🏫 Teacher</span>
+                        {% else %}
+                            <span class="role-badge-large student">🎓 Student</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Role Management Actions -->
+            {% if user.is_staff and viewed_user.id != user.id %}
+            <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb;">
+                <form method="POST" action="{% url 'admin_change_user_role' viewed_user.id %}" class="role-change-form" onsubmit="return confirm('Are you sure you want to change this user\'s role?');">
+                    {% csrf_token %}
+                    <label for="role-select" style="font-weight: 600; color: #1f2937;">Change Role:</label>
+                    <select name="role" id="role-select" class="role-select" required>
+                        <option value="student" {% if viewed_user.role == 'student' %}selected{% endif %}>🎓 Student</option>
+                        <option value="teacher" {% if viewed_user.role == 'teacher' %}selected{% endif %}>👨‍🏫 Teacher</option>
+                        <option value="admin" {% if viewed_user.role == 'admin' %}selected{% endif %}>👨‍💼 Admin</option>
+                    </select>
+                    <button type="submit" class="btn-role-change" id="role-change-btn">
+                        💾 Update Role
+                    </button>
+                </form>
+                <script>
+                    // Disable button if role hasn't changed
+                    const select = document.getElementById('role-select');
+                    const btn = document.getElementById('role-change-btn');
+                    const originalRole = '{{ viewed_user.role }}';
+                    
+                    select.addEventListener('change', function() {
+                        btn.disabled = this.value === originalRole;
+                    });
+                    
+                    // Initial state
+                    btn.disabled = select.value === originalRole;
+                </script>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card-small">
+                <div class="stat-label-small">Total Borrowings</div>
+                <div class="stat-value-small">{{ total_borrowings }}</div>
+            </div>
+            <div class="stat-card-small">
+                <div class="stat-label-small">Active Borrowings</div>
+                <div class="stat-value-small {% if active_borrowings > 0 %}success{% endif %}">{{ active_borrowings }}</div>
+            </div>
+            <div class="stat-card-small">
+                <div class="stat-label-small">Overdue Items</div>
+                <div class="stat-value-small {% if overdue_borrowings > 0 %}danger{% endif %}">{{ overdue_borrowings }}</div>
+            </div>
+            <div class="stat-card-small">
+                <div class="stat-label-small">Total Reservations</div>
+                <div class="stat-value-small">{{ total_reservations }}</div>
+            </div>
+            <div class="stat-card-small">
+                <div class="stat-label-small">Pending Reservations</div>
+                <div class="stat-value-small {% if pending_reservations > 0 %}success{% endif %}">{{ pending_reservations }}</div>
+            </div>
+            <div class="stat-card-small">
+                <div class="stat-label-small">Awaiting Pickup</div>
+                <div class="stat-value-small {% if assigned_reservations > 0 %}success{% endif %}">{{ assigned_reservations }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Sections -->
+    <div class="content-sections">
+        <!-- Borrowings Section -->
+        <div class="section-card">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <span>📖</span>
+                    <span>Borrowing History</span>
+                    <span style="color: #6b7280; font-size: 0.875rem; font-weight: 400;">(Last 10)</span>
+                </h2>
+                <button class="toggle-btn" onclick="toggleSection(this, 'borrowings')">⌄</button>
+            </div>
+            <div class="section-content" id="borrowings">
+                {% if borrowings %}
+                    <table class="detail-table">
+                        <tbody>
+                            {% for borrowing in borrowings %}
+                                <tr>
+                                    <td>
+                                        <div class="book-title">{{ borrowing.copy.book.title }}</div>
+                                        <div class="book-author">by {{ borrowing.copy.book.author }}</div>
+                                    </td>
+                                    <td>
+                                        {% if borrowing.status == 'active' %}
+                                            {% if borrowing.due_date < now %}
+                                                <span class="status-badge overdue">Overdue</span>
+                                            {% else %}
+                                                <span class="status-badge active">Active</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="status-badge returned">Returned</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div style="font-size: 0.875rem;">
+                                            <div><strong>Borrowed:</strong> {{ borrowing.borrow_date|date:"M d, Y" }}</div>
+                                            <div><strong>Due:</strong> {{ borrowing.due_date|date:"M d, Y" }}</div>
+                                            {% if borrowing.return_date %}
+                                                <div><strong>Returned:</strong> {{ borrowing.return_date|date:"M d, Y" }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="empty-section">
+                        <div class="empty-icon">📚</div>
+                        <div>No borrowing history</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Reservations Section -->
+        <div class="section-card">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <span>🎫</span>
+                    <span>Reservation History</span>
+                    <span style="color: #6b7280; font-size: 0.875rem; font-weight: 400;">(Last 10)</span>
+                </h2>
+                <button class="toggle-btn" onclick="toggleSection(this, 'reservations')">⌄</button>
+            </div>
+            <div class="section-content" id="reservations">
+                {% if reservations %}
+                    <table class="detail-table">
+                        <tbody>
+                            {% for reservation in reservations %}
+                                <tr>
+                                    <td>
+                                        <div class="book-title">{{ reservation.book.title }}</div>
+                                        <div class="book-author">by {{ reservation.book.author }}</div>
+                                    </td>
+                                    <td>
+                                        {% if reservation.status == 'pending' %}
+                                            <span class="status-badge pending">Pending</span>
+                                        {% elif reservation.status == 'assigned' %}
+                                            <span class="status-badge assigned">Ready for Pickup</span>
+                                        {% elif reservation.status == 'fulfilled' %}
+                                            <span class="status-badge fulfilled">Fulfilled</span>
+                                        {% elif reservation.status == 'cancelled' %}
+                                            <span class="status-badge cancelled">Cancelled</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div style="font-size: 0.875rem;">
+                                            <div><strong>Reserved:</strong> {{ reservation.reservation_date|date:"M d, Y" }}</div>
+                                            {% if reservation.expiration_date %}
+                                                <div><strong>Expires:</strong> {{ reservation.expiration_date|date:"M d, Y" }}</div>
+                                            {% endif %}
+                                            {% if reservation.copy %}
+                                                <div><strong>Copy:</strong> {{ reservation.copy.location }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="empty-section">
+                        <div class="empty-icon">🎫</div>
+                        <div>No reservation history</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleSection(button, sectionId) {
+        const content = document.getElementById(sectionId);
+        const isExpanded = content.classList.contains('expanded');
+        
+        if (isExpanded) {
+            content.classList.remove('expanded');
+            button.classList.remove('expanded');
+        } else {
+            content.classList.add('expanded');
+            button.classList.add('expanded');
+        }
+    }
+
+    // Auto-expand sections on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const sections = document.querySelectorAll('.section-content');
+        const toggles = document.querySelectorAll('.toggle-btn');
+        
+        sections.forEach(section => section.classList.add('expanded'));
+        toggles.forEach(toggle => toggle.classList.add('expanded'));
+    });
+</script>
+{% endblock %}
