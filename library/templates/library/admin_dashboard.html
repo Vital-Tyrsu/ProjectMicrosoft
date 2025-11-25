@@ -95,6 +95,10 @@
         background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
     }
 
+    .stat-icon.lost {
+        background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);
+    }
+
     .stat-value {
         font-size: 2.5rem;
         font-weight: 700;
@@ -425,6 +429,19 @@
                 <div class="stat-icon users">👥</div>
             </div>
         </a>
+
+        {% if lost_books > 0 %}
+        <div class="stat-card" style="border: 2px solid #dc2626;">
+            <div class="stat-card-header">
+                <div>
+                    <div class="stat-value" style="color: #dc2626;">{{ lost_books }}</div>
+                    <div class="stat-label">Lost Books</div>
+                    <div class="stat-badge" style="background: #fee2e2; color: #991b1b;">Marked as lost</div>
+                </div>
+                <div class="stat-icon lost">📕</div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Quick Actions -->

@@ -422,6 +422,7 @@ def admin_dashboard(request):
             'assigned_reservations': Reservation.objects.filter(
                 status='assigned'
             ).count(),
+            'lost_books': BookCopy.objects.filter(condition='lost').count(),
         }
         # Cache for 5 minutes
         cache.set(cache_key, stats, 300)
@@ -434,6 +435,7 @@ def admin_dashboard(request):
     overdue_borrowings = stats['overdue_borrowings']
     pending_reservations = stats['pending_reservations']
     assigned_reservations = stats['assigned_reservations']
+    lost_books = stats['lost_books']
     
     # Recent activity (last 10 actions)
     recent_reservations = Reservation.objects.select_related(
@@ -469,6 +471,7 @@ def admin_dashboard(request):
         'overdue_borrowings': overdue_borrowings,
         'pending_reservations': pending_reservations,
         'assigned_reservations': assigned_reservations,
+        'lost_books': lost_books,
         'recent_reservations': recent_reservations,
         'recent_borrowings': recent_borrowings,
         'low_stock_books': low_stock_books[:5],  # Top 5 low stock

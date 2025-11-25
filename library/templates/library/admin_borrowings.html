@@ -357,6 +357,9 @@
                                 <span class="location-info">
                                     📍 {{ borrowing.copy.location }}
                                 </span>
+                                {% if borrowing.copy.condition == 'lost' %}
+                                    <br><span style="color: #dc2626; font-size: 0.75rem; font-weight: 600;">⚠️ LOST</span>
+                                {% endif %}
                             </td>
                             <td>
                                 <span style="color: #6b7280;">
@@ -370,8 +373,14 @@
                                 {% if not borrowing.return_date and borrowing.due_date < now %}
                                     <br>
                                     <span style="color: #dc2626; font-size: 0.75rem; font-weight: 600;">
-                                        ⚠️ {{ borrowing.due_date|timesince }} overdue
+                                        ⚠️ {{ borrowing.days_overdue }} days overdue
                                     </span>
+                                    {% if borrowing.days_overdue >= 14 %}
+                                        <br>
+                                        <span style="color: #991b1b; font-size: 0.75rem; font-weight: 700;">
+                                            🚨 READY TO MARK AS LOST
+                                        </span>
+                                    {% endif %}
                                 {% endif %}
                             </td>
                             <td>
