@@ -7,7 +7,22 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.conf import settings
+from django.contrib.sites.shortcuts import get_current_site
 from datetime import datetime, timedelta
+
+
+def get_site_url():
+    """Get the site URL from settings or use a default"""
+    # Try to get from environment variable or settings
+    site_url = getattr(settings, 'SITE_URL', None)
+    if not site_url:
+        # Fallback to constructing from ALLOWED_HOSTS
+        allowed_hosts = getattr(settings, 'ALLOWED_HOSTS', ['localhost'])
+        if allowed_hosts and allowed_hosts[0] != 'localhost':
+            site_url = f'https://{allowed_hosts[0]}'
+        else:
+            site_url = 'http://localhost:8000'
+    return site_url
 
 
 def send_reservation_confirmation(user, reservation):
@@ -31,6 +46,7 @@ def send_reservation_confirmation(user, reservation):
         'reservation': reservation,
         'book': reservation.book,
         'expiry_date': expiry_date,
+        'site_url': get_site_url(),
     }
     
     # Render HTML email
@@ -75,6 +91,7 @@ def send_reservation_assigned(user, reservation, book_copy):
         'book_copy': book_copy,
         'location': book_copy.location,
         'pickup_deadline': pickup_deadline,
+        'site_url': get_site_url(),
     }
     
     # Render HTML email
@@ -117,6 +134,7 @@ def send_due_date_reminder(user, borrowing):
         'book': borrowing.copy.book,
         'due_date': borrowing.due_date,
         'days_until_due': days_until_due,
+        'site_url': get_site_url(),
     }
     
     # Render HTML email
@@ -159,6 +177,7 @@ def send_overdue_notice(user, borrowing):
         'book': borrowing.copy.book,
         'due_date': borrowing.due_date,
         'days_overdue': days_overdue,
+        'site_url': get_site_url(),
     }
     
     # Render HTML email
@@ -193,6 +212,7 @@ def send_pickup_confirmation(user, borrowing):
         'user': user,
         'borrowing': borrowing,
         'book': borrowing.copy.book,
+        'site_url': get_site_url(),
     }
     
     # Render HTML email
@@ -237,6 +257,7 @@ def send_return_confirmation(user, borrowing):
         'book': borrowing.copy.book,
         'was_on_time': was_on_time,
         'days_late': days_late,
+        'site_url': get_site_url(),
     }
     
     # Render HTML email

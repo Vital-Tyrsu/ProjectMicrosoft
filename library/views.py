@@ -53,13 +53,13 @@ def book_catalog(request):
     user = request.user
     active_borrowings = Borrowing.objects.filter(
         user=user,
-        status='active'
+        return_date__isnull=True  # Any unreturned book
     ).count()
     
     overdue_borrowings = Borrowing.objects.filter(
         user=user,
-        status='active',
-        due_date__lt=timezone.now().date()
+        return_date__isnull=True,
+        due_date__lt=timezone.now()
     ).count()
     
     pending_reservations = Reservation.objects.filter(
@@ -112,13 +112,13 @@ def book_catalog(request):
     
     # Annotate books with counts in a single query
     books_with_counts = Book.objects.filter(id__in=book_ids).annotate(
-        total_copies=Count('bookcopy', distinct=True),
+        total_copies=Count('bookcopy', filter=~Q(bookcopy__condition='lost'), distinct=True),  # Exclude lost copies
         unavailable_copies_count=Count(
             'bookcopy',
             filter=Q(
                 Q(bookcopy__borrowing__return_date__isnull=True, bookcopy__borrowing__status='active') |
                 Q(bookcopy__reservation__status='assigned')
-            ),
+            ) & ~Q(bookcopy__condition='lost'),  # Exclude lost copies
             distinct=True
         )
     )
@@ -551,11 +551,16 @@ def admin_reservations(request):
     # Get filter parameters
     status_filter = request.GET.get('status', 'all')
     search_query = request.GET.get('search', '')
+    user_filter = request.GET.get('user', '')  # Filter by specific user
     
     # Base queryset
     reservations = Reservation.objects.select_related(
         'user', 'book', 'copy'
     ).order_by('-reservation_date')
+    
+    # Apply user filter (from clicked stat card)
+    if user_filter:
+        reservations = reservations.filter(user_id=user_filter)
     
     # Apply status filter
     if status_filter != 'all':
@@ -645,16 +650,36 @@ def admin_borrowings(request):
     # Get filter parameters
     filter_type = request.GET.get('filter', 'active_all')
     search_query = request.GET.get('search', '')
+    user_filter = request.GET.get('user', '')  # Filter by specific user
+    status_filter = request.GET.get('status', '')  # Direct status filter
+    overdue_filter = request.GET.get('overdue', '')  # Overdue filter
     
     # Base queryset
     borrowings = Borrowing.objects.select_related(
         'user', 'copy__book'
     ).order_by('-borrow_date')
     
-    # Apply filter
+    # Apply user filter (from clicked stat card)
+    if user_filter:
+        borrowings = borrowings.filter(user_id=user_filter)
+    
+    # Apply status filter (from clicked stat card)
+    if status_filter == 'active':
+        borrowings = borrowings.filter(return_date__isnull=True, status='active')
+    
+    # Apply overdue filter (from clicked stat card)
+    if overdue_filter == 'true':
+        borrowings = borrowings.filter(
+            return_date__isnull=True,
+            status='active',
+            due_date__lt=timezone.now()
+        )
+    
+    # Apply filter type (from dropdown)
     if filter_type == 'active_all':
         # Show all unreturned books (both active and return_pending)
-        borrowings = borrowings.filter(return_date__isnull=True)
+        if not status_filter and not overdue_filter:  # Don't override stat card filters
+            borrowings = borrowings.filter(return_date__isnull=True)
     elif filter_type == 'active':
         borrowings = borrowings.filter(return_date__isnull=True, status='active')
     elif filter_type == 'return_pending':
@@ -845,6 +870,63 @@ def admin_change_user_role(request, user_id):
     )
     
     return redirect('admin_user_detail', user_id=user_id)
+
+
+@require_http_methods(["POST"])
+def admin_delete_user(request, user_id):
+    """Admin action: Delete or deactivate a user with safety checks"""
+    if not request.user.is_staff:
+        messages.error(request, 'You do not have permission to perform this action.')
+        return redirect('book_catalog')
+    
+    user = get_object_or_404(User, id=user_id)
+    
+    # Prevent self-deletion
+    if user.id == request.user.id:
+        messages.error(request, '❌ You cannot delete your own account.')
+        return redirect('admin_user_detail', user_id=user_id)
+    
+    # Check for active borrowings
+    active_borrowings = Borrowing.objects.filter(
+        user=user,
+        return_date__isnull=True
+    ).count()
+    
+    # Check for pending/assigned reservations
+    active_reservations = Reservation.objects.filter(
+        user=user,
+        status__in=['pending', 'assigned']
+    ).count()
+    
+    action = request.POST.get('action', 'deactivate')
+    
+    if action == 'delete' and (active_borrowings > 0 or active_reservations > 0):
+        messages.error(
+            request,
+            f'❌ Cannot delete {user.username}: User has {active_borrowings} active borrowing(s) '
+            f'and {active_reservations} active reservation(s). Please resolve these first or deactivate the account instead.'
+        )
+        return redirect('admin_user_detail', user_id=user_id)
+    
+    if action == 'delete':
+        # Permanent deletion (only if no active items)
+        username = user.username
+        user.delete()
+        messages.success(
+            request,
+            f'✅ User "{username}" has been permanently deleted from the system.'
+        )
+        return redirect('admin_users')
+    else:
+        # Deactivate (safe, preserves history)
+        user.is_active = False
+        user.save()
+        messages.success(
+            request,
+            f'✅ User "{user.username}" has been deactivated. They can no longer log in, '
+            f'but their borrowing/reservation history is preserved.'
+        )
+        return redirect('admin_user_detail', user_id=user_id)
 
 
 # ===================================

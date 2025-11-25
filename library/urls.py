@@ -21,6 +21,7 @@ urlpatterns = [
     path('admin-dashboard/users/', views.admin_users, name='admin_users'),
     path('admin-dashboard/users/<int:user_id>/', views.admin_user_detail, name='admin_user_detail'),
     path('admin-dashboard/users/<int:user_id>/change-role/', views.admin_change_user_role, name='admin_change_user_role'),
+    path('admin-dashboard/users/<int:user_id>/delete/', views.admin_delete_user, name='admin_delete_user'),
     
     # Data Management routes
     path('admin-dashboard/data-management/', views.admin_data_management, name='admin_data_management'),

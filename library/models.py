@@ -94,23 +94,41 @@ class Book(models.Model):
         return None
 
 class BookCopy(models.Model):
+    CONDITION_CHOICES = (
+        ('new', 'New'),
+        ('good', 'Good'),
+        ('fair', 'Fair'),
+        ('poor', 'Poor'),
+        ('lost', 'Lost'),  # Permanently unavailable
+    )
+    
     book = models.ForeignKey(Book, on_delete=models.CASCADE)
-    condition = models.CharField(max_length=50)
+    condition = models.CharField(max_length=50, choices=CONDITION_CHOICES, default='good')
     location = models.CharField(
         max_length=50,
         unique=True,  # Each physical location can only hold one book copy
         validators=[RegexValidator(regex=r'^\d+-[A-Z]-\d+$', message='Format must be like "1-A-12"')],
         help_text='Physical shelf location (e.g., 1-A-12). Must be unique across all book copies.'
     )
+    lost_date = models.DateTimeField(null=True, blank=True, help_text='Date when book was marked as lost')
+    lost_reason = models.TextField(null=True, blank=True, help_text='Reason why book was marked as lost')
 
     class Meta:
         db_table = 'book_copies'
         indexes = [
             models.Index(fields=['book'], name='bookcopy_book_idx'),  # For finding copies of a book
+            models.Index(fields=['condition'], name='bookcopy_condition_idx'),  # For filtering lost books
         ]
 
     def __str__(self):
         return f"{self.book.title} ({self.location})"
+    
+    def mark_as_lost(self, reason=None):
+        """Mark this copy as permanently lost"""
+        self.condition = 'lost'
+        self.lost_date = timezone.now()
+        self.lost_reason = reason or 'Book not returned after extended overdue period'
+        self.save()
 
 class Reservation(models.Model):
     STATUS_CHOICES = (
@@ -143,6 +161,8 @@ class Reservation(models.Model):
         if self.status == 'pending':
             available_copy = BookCopy.objects.filter(
                 book=self.book
+            ).exclude(
+                condition='lost'  # Never assign lost copies
             ).exclude(
                 id__in=Reservation.objects.filter(status='assigned').values('copy_id')  # Only 'assigned', not 'picked_up'
             ).exclude(
@@ -182,6 +202,24 @@ class Borrowing(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.copy.book.title}"
     
+    def days_overdue(self):
+        """Calculate how many days overdue this borrowing is (returns 0 if not overdue)"""
+        if self.return_date is not None:  # Already returned
+            return 0
+        if self.due_date is None:
+            return 0
+        
+        due = self.due_date.date() if hasattr(self.due_date, 'date') else self.due_date
+        today = timezone.now().date()
+        
+        if today > due:
+            return (today - due).days
+        return 0
+    
+    def is_severely_overdue(self, threshold_days=14):
+        """Check if book is overdue by more than threshold days (default 14)"""
+        return self.days_overdue() >= threshold_days
+    
     def can_renew(self):
         """Check if the borrowing can be renewed"""
         if self.renewal_count >= 2:
@@ -190,6 +228,9 @@ class Borrowing(models.Model):
             return False, "Book already returned"
         if self.status == 'return_pending':
             return False, "Return is pending"
+        # Prevent renewal if overdue by more than 7 days
+        if self.days_overdue() > 7:
+            return False, f"Book is {self.days_overdue()} days overdue. Cannot renew."
         return True, "Can renew"
     
     def renew(self):

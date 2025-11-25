@@ -38,7 +38,7 @@ class Command(BaseCommand):
             
             # Find all borrowings due in 2 days that haven't been returned
             due_soon_borrowings = Borrowing.objects.filter(
-                due_date=reminder_date,
+                due_date__date=reminder_date,
                 return_date__isnull=True,
                 user__email__isnull=False  # Only users with email
             ).select_related('user', 'copy__book')
@@ -76,24 +76,57 @@ class Command(BaseCommand):
         if settings.SEND_OVERDUE_NOTIFICATIONS:
             # Find all borrowings that are overdue and haven't been returned
             overdue_borrowings = Borrowing.objects.filter(
-                due_date__lt=today,
+                due_date__date__lt=today,
                 return_date__isnull=True,
                 user__email__isnull=False  # Only users with email
             ).select_related('user', 'copy__book')
             
             overdue_count = 0
+            urgent_count = 0
+            final_warning_count = 0
+            
             self.stdout.write(f'\n🚨 Checking for overdue books...')
             
             for borrowing in overdue_borrowings:
                 if borrowing.user.email:
-                    days_overdue = (today - borrowing.due_date).days
+                    # Convert due_date to date if it's a datetime
+                    due_date = borrowing.due_date.date() if hasattr(borrowing.due_date, 'date') else borrowing.due_date
+                    days_overdue = (today - due_date).days
+                    
+                    # Escalation levels:
+                    # 1-6 days: Standard overdue notice (sent daily)
+                    # 7 days: URGENT warning
+                    # 14 days: FINAL WARNING before marking as lost
+                    
+                    email_type = "overdue"
+                    if days_overdue == 7:
+                        email_type = "urgent"
+                        urgent_count += 1
+                    elif days_overdue == 14:
+                        email_type = "final_warning"
+                        final_warning_count += 1
                     
                     if not dry_run:
-                        send_overdue_notice(borrowing.user, borrowing)
+                        # Send appropriate email based on escalation level
+                        if email_type == "urgent" or email_type == "final_warning":
+                            # For now, use same email but we can create specific templates later
+                            send_overdue_notice(borrowing.user, borrowing)
+                        else:
+                            send_overdue_notice(borrowing.user, borrowing)
+                    
+                    style_method = self.style.ERROR
+                    prefix = "⚠️ "
+                    
+                    if email_type == "urgent":
+                        style_method = self.style.ERROR
+                        prefix = "🚨 URGENT: "
+                    elif email_type == "final_warning":
+                        style_method = self.style.ERROR  
+                        prefix = "⛔ FINAL WARNING: "
                     
                     self.stdout.write(
-                        self.style.ERROR(
-                            f'  ⚠️  {"[DRY RUN] Would send" if dry_run else "Sent"} overdue notice to {borrowing.user.email} '
+                        style_method(
+                            f'  {prefix}{"[DRY RUN] Would send" if dry_run else "Sent"} {email_type} notice to {borrowing.user.email} '
                             f'for "{borrowing.copy.book.title}" ({days_overdue} days overdue)'
                         )
                     )
@@ -102,11 +135,12 @@ class Command(BaseCommand):
             if overdue_count == 0:
                 self.stdout.write('  ✅ No overdue books - all good!')
             else:
-                self.stdout.write(
-                    self.style.ERROR(
-                        f'\n⚠️  {"Would send" if dry_run else "Sent"} {overdue_count} overdue notice(s)\n'
-                    )
-                )
+                summary = f'\n⚠️  {"Would send" if dry_run else "Sent"} {overdue_count} overdue notice(s)'
+                if urgent_count > 0:
+                    summary += f' ({urgent_count} URGENT)'
+                if final_warning_count > 0:
+                    summary += f' ({final_warning_count} FINAL WARNING)'
+                self.stdout.write(self.style.ERROR(summary))
         else:
             self.stdout.write(
                 self.style.WARNING('⚠️  Overdue notifications are disabled in settings\n')

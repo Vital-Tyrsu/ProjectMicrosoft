@@ -11,8 +11,9 @@ from import_export.admin import ImportExportModelAdmin
 from .models import User, Book, BookCopy, Reservation, Borrowing, ReservationLog
 
 class CustomUserAdmin(UserAdmin):
-    list_display = ('username', 'role')
-    list_filter = ('role',)
+    list_display = ('username', 'email', 'role', 'is_active', 'date_joined')
+    list_filter = ('role', 'is_active')
+    search_fields = ('username', 'email', 'first_name', 'last_name')
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
         ('Personal info', {'fields': ('first_name', 'last_name', 'email')}),
@@ -20,6 +21,7 @@ class CustomUserAdmin(UserAdmin):
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
         ('Role', {'fields': ('role',)}),
     )
+    actions = ['deactivate_users', 'activate_users']
 
     def has_view_permission(self, request, obj=None):
         return request.user.role == 'admin'
@@ -31,7 +33,51 @@ class CustomUserAdmin(UserAdmin):
         return request.user.role == 'admin'
 
     def has_delete_permission(self, request, obj=None):
+        # Allow deletion but show warning about related records
         return request.user.role == 'admin'
+    
+    def deactivate_users(self, request, queryset):
+        """Deactivate users instead of deleting (safer option)"""
+        count = queryset.update(is_active=False)
+        self.message_user(request, f'{count} user(s) deactivated successfully.', messages.SUCCESS)
+    deactivate_users.short_description = "Deactivate selected users (safer than delete)"
+    
+    def activate_users(self, request, queryset):
+        """Reactivate users"""
+        count = queryset.update(is_active=True)
+        self.message_user(request, f'{count} user(s) activated successfully.', messages.SUCCESS)
+    activate_users.short_description = "Activate selected users"
+    
+    def delete_model(self, request, obj):
+        """Override delete to show warning"""
+        # Check for related records
+        borrowings = Borrowing.objects.filter(user=obj).count()
+        reservations = Reservation.objects.filter(user=obj).count()
+        
+        if borrowings > 0 or reservations > 0:
+            self.message_user(
+                request,
+                f'Warning: User {obj.username} has {borrowings} borrowing(s) and {reservations} reservation(s). '
+                f'These will also be deleted. Consider deactivating the user instead.',
+                messages.WARNING
+            )
+        
+        super().delete_model(request, obj)
+    
+    def delete_queryset(self, request, queryset):
+        """Override bulk delete to show warning"""
+        total_borrowings = Borrowing.objects.filter(user__in=queryset).count()
+        total_reservations = Reservation.objects.filter(user__in=queryset).count()
+        
+        if total_borrowings > 0 or total_reservations > 0:
+            self.message_user(
+                request,
+                f'Warning: Deleting {queryset.count()} users will also delete {total_borrowings} borrowing(s) '
+                f'and {total_reservations} reservation(s). Consider deactivating users instead.',
+                messages.WARNING
+            )
+        
+        super().delete_queryset(request, queryset)
 
 class BookResource(resources.ModelResource):
     class Meta:
