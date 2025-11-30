@@ -937,7 +937,7 @@ def admin_delete_user(request, user_id):
 # ===================================
 
 @login_required
-@user_passes_test(lambda u: u.is_staff, login_url='login')
+@user_passes_test(lambda u: u.is_staff, login_url='student_login')
 def admin_data_management(request):
     """Data Management Center - Landing page"""
     # Calculate statistics
@@ -959,7 +959,7 @@ def admin_data_management(request):
 
 
 @login_required
-@user_passes_test(lambda u: u.is_staff, login_url='login')
+@user_passes_test(lambda u: u.is_staff, login_url='student_login')
 def admin_import_csv(request):
     """CSV Import - Upload and process CSV file"""
     if request.method == 'POST':
@@ -1068,7 +1068,7 @@ def admin_import_csv(request):
 
 
 @login_required
-@user_passes_test(lambda u: u.is_staff, login_url='login')
+@user_passes_test(lambda u: u.is_staff, login_url='student_login')
 def admin_download_sample_csv(request):
     """Generate and download sample CSV file"""
     response = HttpResponse(content_type='text/csv')
@@ -1108,7 +1108,7 @@ def admin_download_sample_csv(request):
 
 
 @login_required
-@user_passes_test(lambda u: u.is_staff, login_url='login')
+@user_passes_test(lambda u: u.is_staff, login_url='student_login')
 def admin_add_book_manual(request):
     """Manual Book Add - Form submission"""
     if request.method == 'POST':
@@ -1180,7 +1180,7 @@ def admin_add_book_manual(request):
 
 
 @login_required
-@user_passes_test(lambda u: u.is_staff, login_url='login')
+@user_passes_test(lambda u: u.is_staff, login_url='student_login')
 def admin_add_book_isbn(request):
     """ISBN Lookup - Fetch book data and create"""
     if request.method == 'POST':
@@ -1251,14 +1251,14 @@ def admin_add_book_isbn(request):
 
 
 @login_required
-@user_passes_test(lambda u: u.is_staff, login_url='login')
+@user_passes_test(lambda u: u.is_staff, login_url='student_login')
 def admin_scan_book(request):
     """Barcode Scanner - Interface for scanning"""
     return render(request, 'library/admin_scan_book.html')
 
 
 @login_required
-@user_passes_test(lambda u: u.is_staff, login_url='login')
+@user_passes_test(lambda u: u.is_staff, login_url='student_login')
 def admin_manage_copies(request):
     """Manage Copies - Add, edit, delete copies"""
     if request.method == 'POST':
