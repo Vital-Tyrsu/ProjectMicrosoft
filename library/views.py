@@ -830,7 +830,7 @@ def admin_user_detail(request, user_id):
 
 @require_http_methods(["POST"])
 def admin_change_user_role(request, user_id):
-    """Admin action: Change a user's role"""
+    """Admin action: Change a user's role or toggle superuser access"""
     if not request.user.is_staff:
         messages.error(request, 'You do not have permission to perform this action.')
         return redirect('book_catalog')
@@ -840,6 +840,25 @@ def admin_change_user_role(request, user_id):
     # Prevent changing your own role
     if user.id == request.user.id:
         messages.error(request, 'You cannot change your own role.')
+        return redirect('admin_user_detail', user_id=user_id)
+    
+    # Handle reactivation
+    if request.POST.get('reactivate'):
+        user.is_active = True
+        user.save()
+        messages.success(request, f'✅ {user.username} has been reactivated.')
+        return redirect('admin_user_detail', user_id=user_id)
+    
+    # Handle superuser toggle
+    if request.POST.get('toggle_superuser'):
+        if user.is_superuser:
+            user.is_superuser = False
+            messages.success(request, f'⛔ Superuser access removed from {user.username}. They can no longer access /admin/')
+        else:
+            user.is_superuser = True
+            user.is_staff = True  # Superuser requires staff status
+            messages.success(request, f'⭐ Superuser access granted to {user.username}. They can now access /admin/')
+        user.save()
         return redirect('admin_user_detail', user_id=user_id)
     
     new_role = request.POST.get('role')
@@ -861,7 +880,7 @@ def admin_change_user_role(request, user_id):
         user.is_staff = True  # Teachers have staff access
     else:  # student
         user.is_staff = False
-        user.is_superuser = False
+        user.is_superuser = False  # Students can't be superusers
     
     user.save()
     

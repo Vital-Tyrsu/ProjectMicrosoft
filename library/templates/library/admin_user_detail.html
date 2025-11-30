@@ -462,6 +462,33 @@
                     </button>
                 </form>
                 
+                <!-- Superuser Access Toggle -->
+                <div style="margin-top: 1rem; padding: 1rem; background: #fef3c7; border-radius: 0.375rem; border: 1px solid #fbbf24;">
+                    <label style="font-weight: 600; color: #92400e; display: block; margin-bottom: 0.5rem;">
+                        🔐 Django Admin Access
+                    </label>
+                    <p style="font-size: 0.875rem; color: #78350f; margin-bottom: 0.75rem;">
+                        {% if viewed_user.is_superuser %}
+                            This user <strong>can access</strong> the Django admin panel at /admin/
+                        {% else %}
+                            This user <strong>cannot access</strong> the Django admin panel. Grant superuser to allow access.
+                        {% endif %}
+                    </p>
+                    <form method="POST" action="{% url 'admin_change_user_role' viewed_user.id %}" onsubmit="return confirm('{% if viewed_user.is_superuser %}Remove superuser access?{% else %}Grant full Django admin access?{% endif %}');">
+                        {% csrf_token %}
+                        <input type="hidden" name="toggle_superuser" value="true">
+                        {% if viewed_user.is_superuser %}
+                            <button type="submit" style="background: #dc2626; color: white; padding: 0.5rem 1rem; border-radius: 0.375rem; border: none; cursor: pointer; width: 100%; font-weight: 500;">
+                                ⛔ Remove Superuser Access
+                            </button>
+                        {% else %}
+                            <button type="submit" style="background: #059669; color: white; padding: 0.5rem 1rem; border-radius: 0.375rem; border: none; cursor: pointer; width: 100%; font-weight: 500;">
+                                ⭐ Grant Superuser Access
+                            </button>
+                        {% endif %}
+                    </form>
+                </div>
+                
                 <!-- User Management Actions -->
                 <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb;">
                     <label style="font-weight: 600; color: #1f2937; margin-bottom: 0.75rem; display: block;">User Management:</label>
