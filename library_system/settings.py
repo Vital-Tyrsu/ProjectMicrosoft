@@ -99,9 +99,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'library.User'
 
-# Redirect to login page if not authenticated
-LOGIN_URL = 'student_login'
-
 # django-allauth configuration
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
